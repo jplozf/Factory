@@ -1,0 +1,15 @@
+<RCC>
+    <qresource prefix="/">
+        <file>docs/an-introduction-to-tkinter.chm</file>
+        <file>docs/cpp.chm</file>
+        <file>docs/cppreference.chm</file>
+        <file>docs/Css.chm</file>
+        <file>docs/go1.14.4.chm</file>
+        <file>docs/Html.chm</file>
+        <file>docs/HTML5.chm</file>
+        <file>docs/javascript.chm</file>
+        <file>docs/python396.chm</file>
+        <file>docs/Qt-5.7.0.chm</file>
+        <file>docs/rust.chm</file>
+    </qresource>
+</RCC>

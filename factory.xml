@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factory>
+    <language tag="Python">
+        <toolkits>
+            <toolkit tag="Raw">
+                <files>
+                    <file name="%PROJECT%.py" source=":/templates/python/raw/project.py"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="Python Help" source=":/docs/python396.chm"/>
+                </helpfiles>
+            </toolkit>
+            <toolkit tag="Tkinter">
+                <files>
+                    <file name="%PROJECT%.py" source=":/templates/python/tkinter/project.py"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="Python Help" source=":/docs/python396.chm"/>
+                    <help tag="Tkinter Help" source=":/docs/an-introduction-to-tkinter.chm"/>
+                </helpfiles>
+            </toolkit>
+            <toolkit tag="Qt5">
+            </toolkit>
+            <toolkit tag="NCurses">
+            <files>
+                <file name="%PROJECT%.py" source=":/templates/python/ncurses/project.py"/>
+                <file name="README.md" source=":/templates/README.md"/>
+            </files>
+            <helpfiles>
+                <help tag="Python Help" source=":/docs/python396.chm"/>
+            </helpfiles>
+            </toolkit>
+        </toolkits>
+    </language>
+    <language tag="C">
+        <toolkits>
+            <toolkit tag="Raw">
+                <files>
+                    <file name="%PROJECT%.c" source=":/templates/c/raw/project.c"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="C/C++ Help" source=":/docs/cpp.chm"/>
+                </helpfiles>
+            </toolkit>
+            <toolkit tag="NCurses">
+                <files>
+                    <file name="%PROJECT%.c" source=":/templates/c/ncurses/project.c"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="C/C++ Help" source=":/docs/cpp.chm"/>
+                </helpfiles>
+            </toolkit>
+        </toolkits>
+    </language>
+    <language tag="C++">
+        <toolkits>
+            <toolkit tag="Raw">
+                <files>
+                    <file name="%PROJECT%.cpp" source=":/templates/cpp/raw/project.cpp"/>
+                    <file name="myclass.cpp" source=":/templates/cpp/raw/myclass.cpp"/>
+                    <file name="myclass.h" source=":/templates/cpp/raw/myclass.h"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="C++ Help" source=":/docs/cppreference.chm"/>
+                </helpfiles>
+            </toolkit>
+        </toolkits>
+    </language>
+    <language tag="Rust">
+        <toolkits>
+            <toolkit tag="Raw">
+                <files>
+                    <file name="src/%PROJECT%.rs" source=":/templates/rust/raw/project.rs"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="Rust Help" source=":/docs/rust.chm"/>
+                </helpfiles>
+            </toolkit>
+        </toolkits>
+    </language>
+    <language tag="Java"></language>
+    <language tag="Go"></language>
+    <language tag="HTML"></language>
+    <language tag="XML"></language>
+    <language tag="CSS"></language>
+    <language tag="Markdown"></language>
+</factory>
