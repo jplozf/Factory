@@ -6,23 +6,17 @@
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainWindow) {
     ui->setupUi(this);
     setWindowFlags(Qt::Window | Qt::MSWindowsFixedSizeDialogHint);
+    app = new App();
+    runningSession = false;
 
-    appSettings = new Settings();
-    appConstants = new Constants();
+    setObjectName("borderlessMainWindow");
+    setWindowFlags(Qt::FramelessWindowHint| Qt::WindowSystemMenuHint | Qt::WindowStaysOnTopHint | Qt::Dialog | Qt::Tool);
+    setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
+    setAttribute(Qt::WA_QuitOnClose, true);
+    setAttribute(Qt::WA_DeleteOnClose, true);
+    setStyleSheet("#borderlessMainWindow{border:1px solid palette(highlight);}");
 
-    //****************************************************************************
-    // Create application folder if not exists, and...
-    // Dump the resources content into this new folder
-    //****************************************************************************
-    appDir = QDir(QDir::homePath()).filePath(appConstants->getQString("APP_FOLDER"));
-    if (!QDir(appDir).exists()) {
-        QDir().mkdir(appDir);
-        Utils:: copyDirectoryNested(":/", appDir + QDir::separator());
-    }
-
-    connect(ui->btnNewProject, SIGNAL(clicked()), this, SLOT(slotDoNewProject()));
     connect(ui->btnOpenProject, SIGNAL(clicked()), this, SLOT(slotDoOpenProject()));
-    connect(ui->cbxMRUProjects, SIGNAL(currentIndexChanged(QString)), this, SLOT(slotDoOpenRecentProject(QString)));
     connect(ui->btnPropertiesProject, SIGNAL(clicked()), this, SLOT(slotDoPropertiesProject()));
     connect(ui->btnArchiveProject, SIGNAL(clicked()), this, SLOT(slotDoArchiveProject()));
     connect(ui->btnCloseProject, SIGNAL(clicked()), this, SLOT(slotDoCloseProject()));
@@ -42,8 +36,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     ui->tvwProject->sortByColumn(0, Qt::AscendingOrder);
     model->setFilter(QDir::Dirs | QDir::Files | QDir::NoDotAndDotDot);
 
-    model->setRootPath(appSettings->get("DEFAULT_REPOSITORY").toString());
-    ui->tvwProject->setRootIndex(model->index(appSettings->get("DEFAULT_REPOSITORY").toString()));
+    model->setRootPath(app->appSettings->get("DEFAULT_REPOSITORY").toString());
+    ui->tvwProject->setRootIndex(model->index(app->appSettings->get("DEFAULT_REPOSITORY").toString()));
 
     ui->tvwProject->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->tvwProject, SIGNAL(clicked(QModelIndex)), this, SLOT(slotClickedProject(QModelIndex)));
@@ -54,12 +48,50 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     ui->btnCloseProject->setEnabled(false);
     ui->btnPropertiesProject->setEnabled(false);
 
+    connect(ui->btnExit, SIGNAL(clicked()), this, SLOT(slotDoExit()));
     connect(ui->action_Exit, SIGNAL(triggered()), this, SLOT(slotDoExit()));
-    // connect(ui->action_Exit, SIGNAL(triggered()), this, SLOT(this->close()));
 
     readSettings();
-    appSettings->form(ui->boxSettings);
-    connect(appSettings->btnTemplatesCutomizing, SIGNAL(clicked()), this, SLOT(slotDoTemplatesCutomizing()));
+    app->appSettings->form(ui->boxSettings);
+    connect(app->appSettings->btnTemplatesCutomizing, SIGNAL(clicked()), this, SLOT(slotDoTemplatesCutomizing()));
+    app->mruProjects = this->mruProjects;
+}
+
+//******************************************************************************
+// mousePressEvent()
+//******************************************************************************
+void MainWindow::mousePressEvent(QMouseEvent* event) {
+    if (!ui->centralwidget->underMouse() && !ui->lblTitle->underMouse())
+        return;
+
+    if(event->button() == Qt::LeftButton) {
+        mMoving = true;
+        mLastMousePosition = event->pos();
+    }
+}
+
+//******************************************************************************
+// mouseMoveEvent()
+//******************************************************************************
+void MainWindow::mouseMoveEvent(QMouseEvent* event) {
+    if (!ui->centralwidget->underMouse() && !ui->lblTitle->underMouse())
+        return;
+
+    if( event->buttons().testFlag(Qt::LeftButton) && mMoving) {
+        move(pos() + (event->pos() - mLastMousePosition));
+    }
+}
+
+//******************************************************************************
+// mouseReleaseEvent()
+//******************************************************************************
+void MainWindow::mouseReleaseEvent(QMouseEvent* event) {
+    if (!ui->centralwidget->underMouse() && !ui->lblTitle->underMouse())
+        return;
+
+    if(event->button() == Qt::LeftButton) {
+        mMoving = false;
+    }
 }
 
 //******************************************************************************
@@ -81,9 +113,12 @@ void MainWindow::slotDoExit() {
 //******************************************************************************
 void MainWindow::closeEvent(QCloseEvent *event) {
     QMessageBox::StandardButton rc;
-    rc = QMessageBox::question(this, appConstants->getQString("APPLICATION_NAME"), QString("Close the factory ?\n"), QMessageBox::Yes|QMessageBox::No);
+    rc = QMessageBox::question(this, app->appConstants->getQString("APPLICATION_NAME"), QString("Close the factory ?\n"), QMessageBox::Yes|QMessageBox::No);
     if (rc == QMessageBox::Yes) {
         saveSettings();
+        if (runningSession == true && project!=NULL) {
+            closeProject();
+        }
         event->accept();
     } else {
         event->ignore();
@@ -97,7 +132,7 @@ void MainWindow::saveSettings() {
     //**************************************************************************
     // Application state saving
     //**************************************************************************
-    QSettings registry(appConstants->getQString("ORGANIZATION_NAME"), appConstants->getQString("APPLICATION_NAME"));
+    QSettings registry(app->appConstants->getQString("ORGANIZATION_NAME"), app->appConstants->getQString("APPLICATION_NAME"));
     registry.setValue("geometry", saveGeometry());
     registry.setValue("windowState", saveState());
 
@@ -107,7 +142,7 @@ void MainWindow::saveSettings() {
     QVectorIterator<QString> iProjects(mruProjects);
     int jProjects(0);
     int cProjects(0);
-    int mProjetcs(appSettings->get("MRU_PROJECTS").toInt());
+    int mProjetcs(app->appSettings->get("MRU_PROJECTS").toInt());
     int eProjects(mruProjects.length());
     qDebug() << eProjects;
     registry.beginWriteArray("Projects");
@@ -134,7 +169,7 @@ void MainWindow::saveSettings() {
 // readSettings()
 //******************************************************************************
 void MainWindow::readSettings() {
-    QSettings registry(appConstants->getQString("ORGANIZATION_NAME"), appConstants->getQString("APPLICATION_NAME"));
+    QSettings registry(app->appConstants->getQString("ORGANIZATION_NAME"), app->appConstants->getQString("APPLICATION_NAME"));
 
     const QByteArray geometry = registry.value("geometry", QByteArray()).toByteArray();
     if (geometry.isEmpty()) {
@@ -159,11 +194,6 @@ void MainWindow::readSettings() {
         mruProjects.append(registry.value("Project").toString());
     }
     registry.endArray();
-    QVectorIterator<QString> iProjects(mruProjects);
-    while (iProjects.hasNext()) {
-        QString project = iProjects.next();
-        ui->cbxMRUProjects->addItem(project);
-    }
 
     //**************************************************************************
     // Restoring last opening project and open it
@@ -171,53 +201,53 @@ void MainWindow::readSettings() {
     const QString lastProject = registry.value("lastProject", QString()).toString();
     if (!lastProject.isEmpty()) {
         openProject(lastProject);
+        this->helpFiles = project->getHelpFiles();
+        setHelpFilesInToolbar(this->helpFiles);
     } else {
         closeProject();
-    }
-
-    //**************************************************************************
-    // Download the documentation files
-    //**************************************************************************
-    docDir = appDir + QDir::separator() + "dox" + QDir::separator();
-    if (!QDir(docDir).exists()) {
-        QDir().mkdir(docDir);
-    }
-    QList<QStringList> f = Downloader::getFilesFromIndex(appConstants->getQString("WEB_REPOSITORY") + "index.txt");
-    foreach(QStringList item, f) {
-        Downloader::downloadFile(appConstants->getQString("WEB_REPOSITORY") + item[0], docDir + item[0]);
     }
 }
 
 //******************************************************************************
-// slotDoNewProject()
+// setHelpFilesInToolbar()
 //******************************************************************************
-void MainWindow::slotDoNewProject() {
-    DlgNewProject *dlg = new DlgNewProject(appSettings, appConstants);
-    dlg->setModal(true);
-    if(dlg->exec() == QDialog::Accepted)
+void MainWindow::setHelpFilesInToolbar(const QList<QStringList> helpFiles) {
+    // First, clear all the previous existing buttons from the layout
+    QLayoutItem *lItem;
+    while((lItem=ui->layToolbar->takeAt(0))!=NULL)
     {
-        openProject(dlg->getProjectPath());
+        delete lItem->widget();
+        delete lItem;
     }
+    // Then, loop through the help files list and create the new buttons
+    foreach(QStringList item, helpFiles) {
+        QPushButton *helpButton = new QPushButton(item[0]);
+        QObject::connect(helpButton, &QPushButton::clicked, [item]{
+            QString url = QString("file:///%1").arg(item[1]);
+            QDesktopServices::openUrl(QUrl(QString(url), QUrl::TolerantMode));
+        });
+        qDebug() << item[0];
+        // Add the created button to the layout
+        ui->layToolbar->addWidget(helpButton);
+    }
+    // Finally, add a spacer to align buttons at left
+    ui->layToolbar->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Fixed));
 }
 
 //******************************************************************************
 // slotDoOpenProject()
 //******************************************************************************
 void MainWindow::slotDoOpenProject() {
-    QString dirProject = QFileDialog::getExistingDirectory(this, tr("Open Project Folder"),
-                                                    QDir::homePath(),
-                                                    QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
-    if (!dirProject.isEmpty()) {
-        openProject(dirProject);
-    }
-}
-
-//******************************************************************************
-// slotDoOpenRecentProject()
-//******************************************************************************
-void MainWindow::slotDoOpenRecentProject(QString project) {
-    if (!project.isEmpty()) {
-        openProject(project);
+    DlgOpenProject *dlg = new DlgOpenProject(app);
+    dlg->setModal(true);
+    if(dlg->exec() == QDialog::Accepted)
+    {
+        QString dirProject = dlg->getProjectPath();
+        if (!dirProject.isEmpty()) {
+            openProject(dlg->getProjectPath());
+            this->helpFiles = dlg->getHelpFiles();
+            setHelpFilesInToolbar(this->helpFiles);
+        }
     }
 }
 
@@ -251,31 +281,57 @@ void MainWindow::slotDoCloseProject() {
 //******************************************************************************
 // launchProgram()
 //******************************************************************************
-void MainWindow::launchProgram(QString pgm) {
-    QProcess::startDetached(pgm);
+void MainWindow::launchProgram(const QString pgm) {
+    qDebug() << pgm;
+    QStringList args;
+    QProcess::startDetached(pgm, args);
 }
 
 //******************************************************************************
 // openProject()
 //******************************************************************************
-void MainWindow::openProject(QString project) {
-    projectPath = project;        
+void MainWindow::openProject(QString projectPath) {
+    if(runningSession==true && project!=NULL) {
+        closeProject();
+    }
+    this->projectPath = projectPath;
     if (!mruProjects.contains(projectPath))
     {
         mruProjects.append(projectPath);
-        ui->cbxMRUProjects->addItem(projectPath);
     }
 
     QDir projectDir(projectPath);
     if (projectDir.exists()) {
+        this->project = new Project(app, projectPath);
+        qDebug() << "PROJECT LANGUAGE : " << project->projectLanguage;
         model->setRootPath(projectPath);
         ui->tvwProject->setRootIndex(model->index(projectPath));
-        ui->toolBox->setCurrentIndex(1);
+        ui->toolBox->setCurrentIndex(TAB_EDIT);
         QFileInfo fi(projectPath);
-        ui->toolBox->setItemText(0, QString("Project [%1]").arg(fi.fileName()));
+        ui->toolBox->setTabText(TAB_PROJECT, QString("%1").arg(fi.fileName()));
         ui->btnArchiveProject->setEnabled(true);
         ui->btnCloseProject->setEnabled(true);
         ui->btnPropertiesProject->setEnabled(true);
+        project->startSession();
+        runningSession = true;
+
+        ui->lstProjectProperties->clear();
+        QMap<QString, QString> props = this->project->getProperties();
+        /*
+        QMapIterator<QString, QString> i(props);
+        while (i.hasNext()) {
+            i.next();
+            ui->lstProjectProperties->addItem(i.key() + " " + i.value());
+        }
+        */
+        ui->lstProjectProperties->addItem("Project " + props["Name"]);
+        ui->lstProjectProperties->addItem("Created " + Utils::tsToString(props["Created"], app->appSettings->get("DATETIME_FORMAT").toString()));
+        ui->lstProjectProperties->addItem("Modified " + Utils::tsToString(props["Modified"], app->appSettings->get("DATETIME_FORMAT").toString()));
+        ui->lstProjectProperties->addItem("Language " + props["Language"]);
+        ui->lstProjectProperties->addItem("Elapsed " + Utils::secondsToString(props["Elapsed"].toInt()));
+        ui->lstProjectProperties->addItem("Size " + Utils::formatSize(props["Size"].toInt()) + " (" + props["Size"] + " bytes)");
+
+        git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
     } else {
         closeProject();
     }
@@ -286,21 +342,37 @@ void MainWindow::openProject(QString project) {
 //******************************************************************************
 void MainWindow::closeProject() {
     projectPath = "";
-    model->setRootPath(appSettings->get("DEFAULT_REPOSITORY").toString());
-    ui->tvwProject->setRootIndex(model->index(appSettings->get("DEFAULT_REPOSITORY").toString()));
-    ui->toolBox->setCurrentIndex(1);
-    ui->toolBox->setItemText(0, "Project");
+    model->setRootPath(app->appSettings->get("DEFAULT_REPOSITORY").toString());
+    ui->tvwProject->setRootIndex(model->index(app->appSettings->get("DEFAULT_REPOSITORY").toString()));
+    ui->toolBox->setCurrentIndex(TAB_EDIT);
+    ui->toolBox->setTabText(TAB_PROJECT, "Project");
 
     ui->btnArchiveProject->setEnabled(false);
     ui->btnCloseProject->setEnabled(false);
     ui->btnPropertiesProject->setEnabled(false);
+
+    if (project!=NULL) {
+        project->endSession();
+        project->close();
+    }
+
+    runningSession = false;
+    // Clear the help files toolbar
+    QLayoutItem *lItem;
+    while((lItem=ui->layToolbar->takeAt(0))!=NULL)
+    {
+        delete lItem->widget();
+        delete lItem;
+    }
+    // Clear the Project's properties panel
+    ui->lstProjectProperties->clear();
 }
 
 //******************************************************************************
 // slotDoEdit()
 //******************************************************************************
 void MainWindow::slotDoEdit() {
-    launchProgram(appSettings->get("DEFAULT_EDITOR").toString());
+    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString());
 }
 
 //******************************************************************************
@@ -309,7 +381,7 @@ void MainWindow::slotDoEdit() {
 void MainWindow::slotDoEditFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
-    launchProgram(appSettings->get("DEFAULT_EDITOR").toString() + " \"" + f + "\"");
+    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + f + "\"");
 }
 
 //******************************************************************************
@@ -318,9 +390,10 @@ void MainWindow::slotDoEditFile() {
 void MainWindow::slotDoDefaultFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
-    QString url = QString("file://%1").arg(f);
+    QString url = QString("file:///%1").arg(f);
+    // TODO : Test for non regression in Linux, since I added a third backslash after "file:"
     qDebug() << url;
-    QDesktopServices::openUrl(QUrl(QString(url)));
+    QDesktopServices::openUrl(QUrl(QString(url), QUrl::TolerantMode));
 }
 
 //******************************************************************************
@@ -346,14 +419,14 @@ void MainWindow::slotDoLaunchTerminal() {
 void MainWindow::slotDoBrowseFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
-    launchProgram(appSettings->get("DEFAULT_BROWSER").toString() + " \"" + f + "\"");
+    launchProgram(app->appSettings->get("DEFAULT_BROWSER").toString() + " \"" + f + "\"");
 }
 
 //******************************************************************************
 // slotDoTerm()
 //******************************************************************************
 void MainWindow::slotDoTerm() {
-    launchProgram(appSettings->get("DEFAULT_TERMINAL").toString());
+    launchProgram(app->appSettings->get("DEFAULT_TERMINAL").toString());
 }
 
 //******************************************************************************
@@ -367,15 +440,15 @@ void MainWindow::slotDoBuild() {
 // slotDoBrowser()
 //******************************************************************************
 void MainWindow::slotDoBrowser() {
-    launchProgram(appSettings->get("DEFAULT_BROWSER").toString());
+    launchProgram(app->appSettings->get("DEFAULT_BROWSER").toString());
 }
 
 //******************************************************************************
 // slotDoSettings()
 //******************************************************************************
 void MainWindow::slotDoSettings() {
-    appSettings->form(ui->boxSettings);
-    ui->toolBox->setCurrentIndex(4);
+    app->appSettings->form(ui->boxSettings);
+    ui->toolBox->setCurrentIndex(TAB_SETTINGS);
 }
 
 //******************************************************************************
@@ -391,7 +464,10 @@ void MainWindow::slotClickedProject(QModelIndex idx) {
 //******************************************************************************
 void MainWindow::slotDoubleClickedProject(QModelIndex idx) {
     qDebug() << model->filePath(idx);
-    launchProgram(appSettings->get("DEFAULT_EDITOR").toString() + " \"" + model->filePath(idx) + "\"");
+    bool isDir = model->isDir(idx);
+    if (!isDir) {
+        launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + model->filePath(idx) + "\"");
+    }
 }
 
 //******************************************************************************
@@ -545,7 +621,7 @@ void MainWindow::slotDoDeleteFolder() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
     QMessageBox::StandardButton rc;
-    rc = QMessageBox::question(this, appConstants->getQString("APPLICATION_NAME"), QString("Delete this folder ?\n\n%1\n").arg(f), QMessageBox::Yes|QMessageBox::No);
+    rc = QMessageBox::question(this, app->appConstants->getQString("APPLICATION_NAME"), QString("Delete this folder ?\n\n%1\n").arg(f), QMessageBox::Yes|QMessageBox::No);
     if (rc == QMessageBox::Yes) {
         QDir dir(f);
         dir.removeRecursively();
@@ -603,7 +679,7 @@ void MainWindow::slotDoDeleteFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
     QMessageBox::StandardButton rc;
-    rc = QMessageBox::question(this, appConstants->getQString("APPLICATION_NAME"), QString("Delete this file ?\n\n%1\n").arg(f), QMessageBox::Yes|QMessageBox::No);
+    rc = QMessageBox::question(this, app->appConstants->getQString("APPLICATION_NAME"), QString("Delete this file ?\n\n%1\n").arg(f), QMessageBox::Yes|QMessageBox::No);
     if (rc == QMessageBox::Yes) {
         QFile file(f);
         file.remove();
@@ -631,5 +707,7 @@ void MainWindow::slotDoTemplatesCutomizing() {
     QDir appDir = QDir(QDir::homePath()).filePath(appConstants->getQString("APP_FOLDER"));
     Utils:: copyDirectoryNested(":/templates", appDir.path() + QDir::separator() + "templates" );
     */
-    launchProgram(appSettings->get("DEFAULT_EDITOR").toString() + " " + appDir + QDir::separator() + "factory.xml");
+    // launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " " + app->appDir + QDir::separator() + "factory.xml");
+    // launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + f + "\"");
+    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + app->appDir + "/factory.xml" + "\"");
 }

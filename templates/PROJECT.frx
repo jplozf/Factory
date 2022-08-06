@@ -1,0 +1,10 @@
+<project name="%PROJECT%">
+  <language>%LANGUAGE%</language>
+  <created>%DATETIME%</created>
+  <modified>%DATETIME%</modified>
+  <main>%MAIN_FILE%</main>
+  <helpfiles>
+  </helpfiles>
+  <sessions>
+  </sessions>
+</project>

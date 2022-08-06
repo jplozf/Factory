@@ -15,6 +15,9 @@
 #include <QHBoxLayout>
 #include <QWidget>
 #include <QPushButton>
+#include <QFormLayout>
+#include <QLabel>
+#include <QLineEdit>
 
 #include "constants.h"
 #include "utils.h"
@@ -23,12 +26,6 @@ class Settings: public QObject
 {
     Q_OBJECT
 public:
-    static const int LAUNCHER_VIEW_ICON;
-    static const int LAUNCHER_VIEW_LIST;
-    static const int LAUNCHER_ICON_SIZE_SMALL;
-    static const int LAUNCHER_ICON_SIZE_MEDIUM;
-    static const int LAUNCHER_ICON_SIZE_LARGE;
-
     Settings();
     QMap<QString, QVariant> defaults;
     QMap<QString, QVariant> settings;

@@ -12,6 +12,9 @@
 #include <QtNetwork/QNetworkReply>
 #include <QEventLoop>
 #include <QSaveFile>
+#include <QDebug>
+#include <QDirIterator>
+
 
 class Utils
 {
@@ -24,6 +27,9 @@ public:
     static QString pathAppend(const QString& path1, const QString& path2);
     static void copyDirectoryNested(QString from,QString to);
     static void downloadFile(const QString& url, const QString& target);
+    static QString getExtension(QString file);
+    static QString tsToString(QString ts, QString fmt="dddd d MMMM yyyy @ hh:mm:ss");
+    static QString secondsToString(qint64 seconds);
 };
 
 #endif // UTILS_H

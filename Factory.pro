@@ -9,28 +9,31 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    app.cpp \
     constants.cpp \
     dialogs.cpp \
     downloader.cpp \
+    gitapi.cpp \
+    languages.cpp \
     main.cpp \
     mainwindow.cpp \
     project.cpp \
-    projecttemplate.cpp \
     settings.cpp \
     utils.cpp
 
 HEADERS += \
+    app.h \
     constants.h \
     dialogs.h \
     downloader.h \
+    gitapi.h \
+    languages.h \
     mainwindow.h \
     project.h \
-    projecttemplate.h \
     settings.h \
     utils.h
 
 FORMS += \
-    dlgNewProject.ui \
     mainwindow.ui
 
 # Default rules for deployment.

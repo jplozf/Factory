@@ -8,7 +8,6 @@
 #include <vector>
 #include <QString>
 
-
 class Constants
 {
 public:

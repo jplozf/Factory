@@ -8,7 +8,7 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="Python Help" source=":/docs/python396.chm"/>
+                    <help tag="Python Help" source="%DOC_FOLDER%/python396.chm"/>
                 </helpfiles>
             </toolkit>
             <toolkit tag="Tkinter">
@@ -17,8 +17,8 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="Python Help" source=":/docs/python396.chm"/>
-                    <help tag="Tkinter Help" source=":/docs/an-introduction-to-tkinter.chm"/>
+                    <help tag="Python Help" source="%DOC_FOLDER%/python396.chm"/>
+                    <help tag="Tkinter Help" source="%DOC_FOLDER%/an-introduction-to-tkinter.chm"/>
                 </helpfiles>
             </toolkit>
             <toolkit tag="Qt5">
@@ -29,7 +29,7 @@
                 <file name="README.md" source=":/templates/README.md"/>
             </files>
             <helpfiles>
-                <help tag="Python Help" source=":/docs/python396.chm"/>
+                <help tag="Python Help" source="%DOC_FOLDER%/python396.chm"/>
             </helpfiles>
             </toolkit>
         </toolkits>
@@ -42,7 +42,7 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="C/C++ Help" source=":/docs/cpp.chm"/>
+                    <help tag="C/C++ Help" source="%DOC_FOLDER%/cpp.chm"/>
                 </helpfiles>
             </toolkit>
             <toolkit tag="NCurses">
@@ -51,7 +51,7 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="C/C++ Help" source=":/docs/cpp.chm"/>
+                    <help tag="C/C++ Help" source="%DOC_FOLDER%/cpp.chm"/>
                 </helpfiles>
             </toolkit>
         </toolkits>
@@ -66,7 +66,7 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="C++ Help" source=":/docs/cppreference.chm"/>
+                    <help tag="C++ Help" source="%DOC_FOLDER%/cppreference.chm"/>
                 </helpfiles>
             </toolkit>
         </toolkits>
@@ -79,7 +79,7 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="Rust Help" source=":/docs/rust.chm"/>
+                    <help tag="Rust Help" source="%DOC_FOLDER%/rust.chm"/>
                 </helpfiles>
             </toolkit>
         </toolkits>

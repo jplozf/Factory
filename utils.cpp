@@ -1,7 +1,4 @@
 #include "utils.h"
-#include "qdebug.h"
-
-#include <QDirIterator>
 
 //******************************************************************************
 // dirSize()
@@ -46,7 +43,7 @@ QMap<QString, QString> Utils::fileProperties(QString f) {
     props.insert("File Name", fi.fileName());
     props.insert("Size Bytes", QString::number(fi.size()));
     props.insert("Size Human",formatSize(fi.size()));
-    props.insert("Date Created", fi.created().toString("yyyy/MM/dd hh:mm:ss"));
+    props.insert("Date Created", fi.birthTime().toString("yyyy/MM/dd hh:mm:ss"));
     props.insert("Date Modified", fi.lastModified().toString("yyyy/MM/dd hh:mm:ss"));
     props.insert("Owner User", fi.owner());
     props.insert("Owner Group", fi.group());
@@ -141,3 +138,32 @@ void Utils::copyDirectoryNested(QString from,QString to)
         }
     }
 }
+
+//******************************************************************************
+// getExtension()
+//******************************************************************************
+QString Utils::getExtension(QString file) {
+    QFileInfo fi(file);
+    return ("." + fi.suffix());
+}
+
+//******************************************************************************
+// tsToString()
+// Format a timestamp string to human readable string
+//******************************************************************************
+QString Utils::tsToString(QString ts, QString fmt) {
+    QDateTime qdt = QDateTime::fromString(ts, "yyyyMMdd-hhmmss");
+    QString txt = qdt.toString(fmt);
+    return txt;
+}
+
+//******************************************************************************
+// secondsToString()
+//******************************************************************************
+QString Utils::secondsToString(qint64 seconds) {
+    const qint64 DAY = 86400;
+    qint64 days = seconds / DAY;
+    QTime t = QTime(0,0).addSecs(seconds % DAY);
+    return QString("%1 days, %2 hours, %3 minutes, %4 seconds").arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
+}
+

@@ -1,4 +1,5 @@
 #include "dialogs.h"
+#include "qfiledialog.h"
 
 //******************************************************************************
 // DlgProperties()
@@ -23,18 +24,18 @@ DlgProperties::DlgProperties(QMap<QString, QString> props, QString title, QDialo
 }
 
 //******************************************************************************
-// DlgNewProject()
+// DlgOpenProject()
 //******************************************************************************
-DlgNewProject::DlgNewProject(Settings *appSettings, Constants *appConstants, QDialog *parent) : QDialog{parent}
+DlgOpenProject::DlgOpenProject(App *app, QDialog *parent) : QDialog{parent}
 {
-    this->appSettings = appSettings;
-    this->appConstants = appConstants;
-    this->appDir = appDir = QDir(QDir::homePath()).filePath(appConstants->getQString("APP_FOLDER"));
-    this->repository = appSettings->get("DEFAULT_REPOSITORY").toString();
-    this->setWindowTitle("New Project");
-    QFormLayout *layout = new QFormLayout();
-    this->setLayout(layout);
+    this->app = app;
+    this->repository = app->appSettings->get("DEFAULT_REPOSITORY").toString();
+    this->setWindowTitle("Project");
+    tbwProject = new QTabWidget();
 
+    // NEW PROJECT TAB =========================================================
+    QWidget *tabNewProject = new QWidget();
+    QFormLayout *layNewProject = new QFormLayout();
     // NAME
     QLabel *lblName = new QLabel("Name");
     QHBoxLayout *layoutName = new QHBoxLayout();
@@ -44,59 +45,114 @@ DlgNewProject::DlgNewProject(Settings *appSettings, Constants *appConstants, QDi
     connect(txtProjectName, SIGNAL(textChanged(QString)), this, SLOT(slotNameChanged(QString)));
     layoutName->addWidget(txtProjectName);
     layoutName->addWidget(btnName);
-    layout->addRow(lblName, layoutName);
-
+    layNewProject->addRow(lblName, layoutName);
     // LANGUAGE
     QLabel *lblLanguage = new QLabel("Language");
     cbxLanguage = new QComboBox();
-    QList<QString> languages = Project::getLanguages(appDir);
+    QList<QString> languages = Project::getLanguages(app->appDir);
     foreach(QString item, languages) {
         cbxLanguage->addItem(item, item);
     }
     connect(cbxLanguage, SIGNAL(activated(int)), this, SLOT(slotSelectLanguage(int)));
-    layout->addRow(lblLanguage, cbxLanguage);
-
+    layNewProject->addRow(lblLanguage, cbxLanguage);
     // TOOLKIT
     QLabel *lblToolkit = new QLabel("Toolkit");
     cbxToolkit = new QComboBox();
     connect(cbxToolkit, SIGNAL(activated(int)), this, SLOT(slotSelectToolkit(int)));
-    layout->addRow(lblToolkit, cbxToolkit);
-
+    layNewProject->addRow(lblToolkit, cbxToolkit);
     // LICENSE
     QLabel *lblLicenses = new QLabel("License");
     cbxLicenses = new QComboBox();
-    QDirIterator it(this->appDir + QDir::separator() + "licenses/", QDir::AllEntries | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
+    QDirIterator it(app->appDir + QDir::separator() + "licenses/", QDir::AllEntries | QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
     while (it.hasNext()) {
         QFileInfo fi(it.next());
         cbxLicenses->addItem(fi.fileName(),fi.absoluteFilePath());
     }
     connect(cbxLicenses, SIGNAL(activated(int)), this, SLOT(slotSelectLicense(int)));
-    layout->addRow(lblLicenses, cbxLicenses);
-
+    layNewProject->addRow(lblLicenses, cbxLicenses);
     // SUMMARY
     QLabel *lblSummary = new QLabel("Summary");
     lstSummary = new QListWidget();
-    layout->addRow(lblSummary, lstSummary);
-
+    layNewProject->addRow(lblSummary, lstSummary);
     // BUTTON BOX
-    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    connect(buttonBox, &QDialogButtonBox::accepted, this, &DlgNewProject::slotAccept);
-    connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    layout->addWidget(buttonBox);
+    QDialogButtonBox *buttonBox1 = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttonBox1, &QDialogButtonBox::accepted, this, &DlgOpenProject::slotAccept);
+    connect(buttonBox1, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    layNewProject->addWidget(buttonBox1);
+    // DISPOSE IN TAB
+    tabNewProject->setLayout(layNewProject);
+    tbwProject->addTab(tabNewProject, "New Project");
+
+    // OPEN PROJECT TAB ========================================================
+    QWidget *tabOpenProject = new QWidget();
+    QVBoxLayout *layOpenProject = new QVBoxLayout();
+    // LABEL + BROWSE BUTTON
+    QLabel *lblInstructions = new QLabel("Please browse to the folder containing your project");
+    layOpenProject->addWidget(lblInstructions);
+    lblOpenProject = new QLabel("Open Project Folder...");
+    // lblOpenProject->setFrameStyle(QFrame::Box);
+    QPushButton *btnOpenProject = new QPushButton("...");
+    QHBoxLayout *layRowProject = new QHBoxLayout();
+    layRowProject->addWidget(lblOpenProject, 1, Qt::AlignLeft);
+    layRowProject->addWidget(btnOpenProject);
+    layOpenProject->addLayout(layRowProject);
+    layOpenProject->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Fixed, QSizePolicy::Expanding));
+    // BUTTON BOX
+    QDialogButtonBox *buttonBox2 = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttonBox2, &QDialogButtonBox::accepted, this, &DlgOpenProject::slotAccept);
+    connect(buttonBox2, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    QFileDialog *qfd = new QFileDialog();   // The lambda in the following line will need it
+    connect(btnOpenProject, &QPushButton::clicked, this, [qfd, this](){
+        this->lblOpenProject->setText(qfd->getExistingDirectory(this, tr("Open Project Folder"),
+        QDir::homePath(),
+        qfd->ShowDirsOnly | qfd->DontResolveSymlinks));
+    });
+    layOpenProject->addWidget(buttonBox2);
+    // DISPOSE IN TAB
+    tabOpenProject->setLayout(layOpenProject);
+    tbwProject->addTab(tabOpenProject, "Open Project");
+
+    // RECENT PROJECT TAB ======================================================
+    QWidget *tabRecentProject = new QWidget();
+    QFormLayout *layRecentProject = new QFormLayout();
+    QVectorIterator<QString> iProjects(app->mruProjects);
+    QListWidget *lstProjects = new QListWidget();
+    while (iProjects.hasNext()) {
+        QString project = iProjects.next();
+        lstProjects->addItem(project);
+    }
+    layRecentProject->addRow(lstProjects);
+    // LABEL
+    lblRecentProject = new QLabel();
+    layRecentProject->addRow(lblRecentProject);
+    // BUTTON BOX
+    QDialogButtonBox *buttonBox3 = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+    connect(buttonBox3, &QDialogButtonBox::accepted, this, &DlgOpenProject::slotAccept);
+    connect(buttonBox3, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(lstProjects, &QListWidget::currentTextChanged, this, [this](QString txt){this->lblRecentProject->setText(txt);});
+    layRecentProject->addWidget(buttonBox3);
+    // DISPOSE IN TAB
+    tabRecentProject->setLayout(layRecentProject);
+    tbwProject->addTab(tabRecentProject, "Recents Projects");
+
+    // DISPOSE IN DIALOG
+    QGridLayout *layMain = new QGridLayout();
+    this->setLayout(layMain);
+    layMain->addWidget(tbwProject);
 }
 
 //******************************************************************************
 // slotNameChanged()
 //******************************************************************************
-void DlgNewProject::slotNameChanged(QString txt) {
+void DlgOpenProject::slotNameChanged(QString txt) {
     buildSummary();
 }
 
 //******************************************************************************
 // slotSelectLanguage()
 //******************************************************************************
-void DlgNewProject::slotSelectLanguage(int item) {
-    QList<QString> toolkits = Project::getToolkits(appDir, cbxLanguage->itemText(item));
+void DlgOpenProject::slotSelectLanguage(int item) {
+    QList<QString> toolkits = Project::getToolkits(app->appDir, cbxLanguage->itemText(item));
     cbxToolkit->clear();
     foreach(QString item, toolkits) {
         cbxToolkit->addItem(item, item);
@@ -107,29 +163,42 @@ void DlgNewProject::slotSelectLanguage(int item) {
 //******************************************************************************
 // slotSelectToolkit()
 //******************************************************************************
-void DlgNewProject::slotSelectToolkit(int item) {
+void DlgOpenProject::slotSelectToolkit(int item) {
     buildSummary();
 }
 
 //******************************************************************************
 // slotSelectLicense()
 //******************************************************************************
-void DlgNewProject::slotSelectLicense(int item) {
+void DlgOpenProject::slotSelectLicense(int item) {
     buildSummary();
 }
 
 //******************************************************************************
 // slotAccept()
 //******************************************************************************
-void DlgNewProject::slotAccept() {
-    createFiles();
+void DlgOpenProject::slotAccept() {
+    switch(tbwProject->currentIndex()) {
+        case 0:         // TAB NEW PROJECT
+        createFiles();
+        projectPath = Utils::pathAppend(repository, Utils::pathAppend(cbxLanguage->currentText(), txtProjectName->text()));
+        break;
+
+        case 1:         // TAB OPEN PROJECT
+        projectPath = lblOpenProject->text();
+        break;
+
+        case 2:         // TAB RECENT PROJECTS
+        projectPath = lblRecentProject->text();
+        break;
+    }
     QDialog::accept();
 }
 
 //******************************************************************************
 // createFiles()
 //******************************************************************************
-void DlgNewProject::createFiles() {
+void DlgOpenProject::createFiles() {
     foreach(QStringList item, filesToCreate) {
         QString newFileName = item[0];
         QString source = item[1];
@@ -150,20 +219,21 @@ void DlgNewProject::createFiles() {
 //******************************************************************************
 // buildSummary()
 //******************************************************************************
-void DlgNewProject::buildSummary() {
+void DlgOpenProject::buildSummary() {
     filesToCreate.clear();
-    files = Project::getFiles(appDir, cbxLanguage->currentText(), cbxToolkit->currentText());
+    files = Project::getFiles(app->appDir, cbxLanguage->currentText(), cbxToolkit->currentText());
     lstSummary->clear();
     foreach(QStringList item, files) {
         lstSummary->addItem(appendFileToList(item[0], item[1]));
     }
     lstSummary->addItem(appendFileToList(cbxLicenses->currentText(), cbxLicenses->currentData().toString()));
+    lstSummary->addItem(appendFileToList("%PROJECT%" + app->appConstants->getQString("PROJECT_FILE_EXTENSION"), ":/templates/PROJECT.frx"));
 }
 
 //******************************************************************************
 // appendFileToList()
 //******************************************************************************
-QString DlgNewProject::appendFileToList(QString filename, QString source) {
+QString DlgOpenProject::appendFileToList(QString filename, QString source) {
     filename = renameFileWithVars(filename);
     QString newFileName = Utils::pathAppend(repository, Utils::pathAppend(cbxLanguage->currentText(), Utils::pathAppend(txtProjectName->text(), filename)));
     filesToCreate.append({newFileName, source});
@@ -173,15 +243,28 @@ QString DlgNewProject::appendFileToList(QString filename, QString source) {
 //******************************************************************************
 // getProjectPath()
 //******************************************************************************
-QString DlgNewProject::getProjectPath() {
-    QString projectPath = Utils::pathAppend(repository, Utils::pathAppend(cbxLanguage->currentText(), txtProjectName->text()));
+QString DlgOpenProject::getProjectPath() {
+    // QString projectPath = Utils::pathAppend(repository, Utils::pathAppend(cbxLanguage->currentText(), txtProjectName->text()));
     return projectPath;
+}
+
+//******************************************************************************
+// getHelpFiles()
+//******************************************************************************
+QList<QStringList> DlgOpenProject::getHelpFiles() {
+    QList<QStringList> h = Project::getHelpFiles(app->appDir, cbxLanguage->currentText(), cbxToolkit->currentText());
+    QList<QStringList> r;
+    foreach(QStringList item, h) {
+        item[1] = setVars(item[1]);
+        r.append({item[0], item[1]});
+    }
+    return r;
 }
 
 //******************************************************************************
 // renameFileWithVars()
 //******************************************************************************
-QString DlgNewProject::renameFileWithVars(QString filename) {
+QString DlgOpenProject::renameFileWithVars(QString filename) {
     filename = setVars(filename);
     return(filename);
 }
@@ -189,7 +272,7 @@ QString DlgNewProject::renameFileWithVars(QString filename) {
 //******************************************************************************
 // replaceVarsInFile()
 //******************************************************************************
-void DlgNewProject::replaceVarsInFile(QString filename) {
+void DlgOpenProject::replaceVarsInFile(QString filename) {
     QByteArray fileData;
     QFile file(filename);
     file.open(QIODevice::ReadWrite);
@@ -206,7 +289,7 @@ void DlgNewProject::replaceVarsInFile(QString filename) {
 //******************************************************************************
 // setVars()
 //******************************************************************************
-QString DlgNewProject::setVars(QString text) {
+QString DlgOpenProject::setVars(QString text) {
     text.replace("%PROJECT%", txtProjectName->text());
     text.replace("%LANGUAGE%", cbxLanguage->currentText());
     text.replace("%TOOLKIT%", cbxToolkit->currentText());
@@ -216,10 +299,11 @@ QString DlgNewProject::setVars(QString text) {
     text.replace("%TIME%", QDateTime::currentDateTime().toString("hhmmss"));
     text.replace("%DATE%", QDateTime::currentDateTime().toString("yyyyMMdd"));
     text.replace("%DATETIME%", QDateTime::currentDateTime().toString("yyyyMMdd-hhmmss"));
-    text.replace("%AUTHOR%", appSettings->get("PROJECT_USER_NAME").toString());
-    text.replace("%COMPANY%", appSettings->get("PROJECT_USER_COMPANY").toString());
-    text.replace("%MAIL%", appSettings->get("PROJECT_USER_MAIL").toString());
-    text.replace("%WEB%", appSettings->get("PROJECT_USER_WEB").toString());
+    text.replace("%AUTHOR%", app->appSettings->get("PROJECT_USER_NAME").toString());
+    text.replace("%COMPANY%", app->appSettings->get("PROJECT_USER_COMPANY").toString());
+    text.replace("%MAIL%", app->appSettings->get("PROJECT_USER_MAIL").toString());
+    text.replace("%WEB%", app->appSettings->get("PROJECT_USER_WEB").toString());
+    text.replace("%DOC_FOLDER%", app->docDir);
 
     return (text);
 }
@@ -227,171 +311,6 @@ QString DlgNewProject::setVars(QString text) {
 //******************************************************************************
 // slotDoRandomName()
 //******************************************************************************
-void DlgNewProject::slotDoRandomName() {
-    QList<QString> scratchAdjectives;
-    scratchAdjectives.append("tiny");
-    scratchAdjectives.append("big");
-    scratchAdjectives.append("shiny");
-    scratchAdjectives.append("fast");
-    scratchAdjectives.append("furious");
-    scratchAdjectives.append("slow");
-    scratchAdjectives.append("gentle");
-    scratchAdjectives.append("slim");
-    scratchAdjectives.append("tall");
-    scratchAdjectives.append("thin");
-    scratchAdjectives.append("short");
-    scratchAdjectives.append("sharp");
-    scratchAdjectives.append("happy");
-    scratchAdjectives.append("bored");
-    scratchAdjectives.append("lucky");
-    scratchAdjectives.append("strong");
-    scratchAdjectives.append("weak");
-    scratchAdjectives.append("mad");
-    scratchAdjectives.append("tired");
-    scratchAdjectives.append("clever");
-    scratchAdjectives.append("smart");
-    scratchAdjectives.append("light");
-    scratchAdjectives.append("heavy");
-    scratchAdjectives.append("foolish");
-    scratchAdjectives.append("black");
-    scratchAdjectives.append("white");
-    scratchAdjectives.append("blue");
-    scratchAdjectives.append("green");
-    scratchAdjectives.append("red");
-    scratchAdjectives.append("yellow");
-    scratchAdjectives.append("brown");
-    scratchAdjectives.append("pink");
-    scratchAdjectives.append("purple");
-    scratchAdjectives.append("orange");
-    scratchAdjectives.append("silver");
-    scratchAdjectives.append("golden");
-    scratchAdjectives.append("noisy");
-    scratchAdjectives.append("freaky");
-    scratchAdjectives.append("little");
-    scratchAdjectives.append("hairy");
-    scratchAdjectives.append("bold");
-    scratchAdjectives.append("brave");
-    scratchAdjectives.append("fat");
-    scratchAdjectives.append("rude");
-    scratchAdjectives.append("pretty");
-    scratchAdjectives.append("old");
-    scratchAdjectives.append("young");
-    scratchAdjectives.append("good");
-    scratchAdjectives.append("bad");
-    scratchAdjectives.append("best");
-    scratchAdjectives.append("new");
-    scratchAdjectives.append("first");
-    scratchAdjectives.append("last");
-    scratchAdjectives.append("nice");
-    scratchAdjectives.append("full");
-    scratchAdjectives.append("empty");
-    scratchAdjectives.append("hot");
-    scratchAdjectives.append("cold");
-    scratchAdjectives.append("high");
-    scratchAdjectives.append("low");
-    scratchAdjectives.append("fresh");
-    scratchAdjectives.append("soft");
-    scratchAdjectives.append("blurry");
-    scratchAdjectives.append("sad");
-    scratchAdjectives.append("healthy");
-    scratchAdjectives.append("thrilled");
-    scratchAdjectives.append("sick");
-
-    QList<QString> scratchAnimals;
-    scratchAnimals.append("dog");
-    scratchAnimals.append("cat");
-    scratchAnimals.append("bee");
-    scratchAnimals.append("wasp");
-    scratchAnimals.append("hornet");
-    scratchAnimals.append("fish");
-    scratchAnimals.append("cow");
-    scratchAnimals.append("puppy");
-    scratchAnimals.append("bird");
-    scratchAnimals.append("parrot");
-    scratchAnimals.append("canary");
-    scratchAnimals.append("turtle");
-    scratchAnimals.append("rabbit");
-    scratchAnimals.append("mouse");
-    scratchAnimals.append("snake");
-    scratchAnimals.append("lizard");
-    scratchAnimals.append("pony");
-    scratchAnimals.append("horse");
-    scratchAnimals.append("pig");
-    scratchAnimals.append("hen");
-    scratchAnimals.append("rooster");
-    scratchAnimals.append("goose");
-    scratchAnimals.append("turkey");
-    scratchAnimals.append("duck");
-    scratchAnimals.append("sheep");
-    scratchAnimals.append("ram");
-    scratchAnimals.append("lamb");
-    scratchAnimals.append("goat");
-    scratchAnimals.append("donkey");
-    scratchAnimals.append("monkey");
-    scratchAnimals.append("jellyfish");
-    scratchAnimals.append("octopus");
-    scratchAnimals.append("butterfly");
-    scratchAnimals.append("bull");
-    scratchAnimals.append("ox");
-    scratchAnimals.append("calf");
-    scratchAnimals.append("hare");
-    scratchAnimals.append("beetle");
-    scratchAnimals.append("snail");
-    scratchAnimals.append("slug");
-    scratchAnimals.append("ant");
-    scratchAnimals.append("spider");
-    scratchAnimals.append("worm");
-    scratchAnimals.append("dove");
-    scratchAnimals.append("crow");
-    scratchAnimals.append("swan");
-    scratchAnimals.append("fox");
-    scratchAnimals.append("owl");
-    scratchAnimals.append("beaver");
-    scratchAnimals.append("bat");
-    scratchAnimals.append("weasel");
-    scratchAnimals.append("deer");
-    scratchAnimals.append("doe");
-    scratchAnimals.append("stag");
-    scratchAnimals.append("tuna");
-    scratchAnimals.append("salmon");
-    scratchAnimals.append("lobster");
-    scratchAnimals.append("shrimp");
-    scratchAnimals.append("oyster");
-    scratchAnimals.append("mussel");
-    scratchAnimals.append("starfish");
-    scratchAnimals.append("whale");
-    scratchAnimals.append("shark");
-    scratchAnimals.append("dolphin");
-    scratchAnimals.append("walrus");
-    scratchAnimals.append("seal");
-    scratchAnimals.append("otter");
-    scratchAnimals.append("panda");
-    scratchAnimals.append("tiger");
-    scratchAnimals.append("lion");
-    scratchAnimals.append("bear");
-    scratchAnimals.append("frog");
-    scratchAnimals.append("toad");
-    scratchAnimals.append("stork");
-    scratchAnimals.append("ostrich");
-    scratchAnimals.append("swallow");
-    scratchAnimals.append("eagle");
-    scratchAnimals.append("sparrow");
-    scratchAnimals.append("tortoise");
-    scratchAnimals.append("ferret");
-    scratchAnimals.append("magpie");
-    scratchAnimals.append("seagull");
-    scratchAnimals.append("squirrel");
-    scratchAnimals.append("hedgehog");
-    scratchAnimals.append("cheetah");
-    scratchAnimals.append("camel");
-    scratchAnimals.append("hyena");
-    scratchAnimals.append("giraffe");
-    scratchAnimals.append("elephant");
-    scratchAnimals.append("gorilla");
-    scratchAnimals.append("baboon");
-
-    QString strAdjective = scratchAdjectives.at(QRandomGenerator::global()->generate() % scratchAdjectives.size());
-    QString strAnimal = scratchAnimals.at(QRandomGenerator::global()->generate() % scratchAnimals.size());
-    txtProjectName->setText(Utils::capitalize(strAdjective) + Utils::capitalize(strAnimal));
+void DlgOpenProject::slotDoRandomName() {
+    txtProjectName->setText(Project::randomName());
 }
-

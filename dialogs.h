@@ -13,14 +13,17 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QListWidget>
-#include <QRandomGenerator>
 #include <QDirIterator>
 #include <QDateTime>
 #include "project.h"
 #include "utils.h"
 #include "settings.h"
 #include "constants.h"
+#include "app.h"
 
+//******************************************************************************
+// Class DlgProperties()
+//******************************************************************************
 class DlgProperties : public QDialog
 {
     Q_OBJECT
@@ -31,17 +34,21 @@ signals:
 
 };
 
-class DlgNewProject : public QDialog
+//******************************************************************************
+// Class DlgOpenProject()
+//******************************************************************************
+class DlgOpenProject : public QDialog
 {
     Q_OBJECT
 public:
-    explicit DlgNewProject(Settings *appSettings, Constants *appConstants, QDialog *parent = nullptr);
+    explicit DlgOpenProject(App *app, QDialog *parent = nullptr);
     QString getProjectPath();
+    QList<QStringList> getHelpFiles();
+    QLabel *lblOpenProject;
+    QLabel *lblRecentProject;
 
 private:
-    QString appDir;
-    Settings *appSettings;
-    Constants *appConstants;
+    QTabWidget *tbwProject;
     QLineEdit *txtProjectName;
     QComboBox *cbxLanguage;
     QComboBox *cbxToolkit;
@@ -49,6 +56,7 @@ private:
     QListWidget *lstSummary;
     QString appendFileToList(QString filename, QString source);
     QString repository;
+    QString projectPath;
     QList<QStringList> filesToCreate;
     void buildSummary();
     QList<QStringList> files;
@@ -56,6 +64,7 @@ private:
     void replaceVarsInFile(QString filename);
     void createFiles();
     QString setVars(QString text);
+    App *app;
 
 private slots:
     void slotDoRandomName();

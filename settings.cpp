@@ -1,52 +1,30 @@
 #include "settings.h"
 
-#include <QFormLayout>
-#include <QLabel>
-#include <QLineEdit>
-
-/*
-const int Settings::LAUNCHER_VIEW_ICON=0;
-const int Settings::LAUNCHER_VIEW_LIST=1;
-const int Settings::LAUNCHER_ICON_SIZE_SMALL=0;
-const int Settings::LAUNCHER_ICON_SIZE_MEDIUM=1;
-const int Settings::LAUNCHER_ICON_SIZE_LARGE=2;
-*/
-
 //******************************************************************************
 // Settings()
 //******************************************************************************
 Settings::Settings()
 {
     // Set  the defaults values...
-    /*
-    defaults["OSD_FONT_SIZE"] = QVariant(16);
-    defaults["OSD_COLOR"] = QVariant(QObject::tr("yellow"));
-    defaults["OSD_SHADOW_COLOR"] = QVariant(QObject::tr("black"));
-    defaults["OSD_TIMEOUT"] = QVariant(3000);
-    defaults["MESSAGE_TIMEOUT"] = QVariant(3000);
-    defaults["PLAYER_VIDEO_SMART_PAUSE"] = QVariant(true);
-    defaults["PLAYER_AUDIO_SMART_PAUSE"] = QVariant(false);
-    defaults["TITLE_BAR_TIME_FORMAT"] = QVariant(QObject::tr(" hh:mm:ss - dd/MM/yyyy"));
-    defaults["TITLE_BAR_POSITION_TOP"] = QVariant(true);
-    defaults["LAUNCHER_ICON_SIZE"] = QVariant(Settings::LAUNCHER_ICON_SIZE_MEDIUM);
-    defaults["LAUNCHER_VIEW"] = QVariant(Settings::LAUNCHER_VIEW_ICON);
-    defaults["PROMPT_WINDOW_MODE"] = QVariant(QObject::tr("> "));
-    defaults["PROMPT_BAR_MODE"] = QVariant(QObject::tr("> "));
-    defaults["CONSOLE_TEXT_COLOR"] = QVariant(QObject::tr("green"));
-    defaults["CONSOLE_BACKGROUND_COLOR"] = QVariant(QObject::tr("black"));
-    defaults["CONSOLE_FONT_SIZE"] = QVariant(16);
-    defaults["CONSOLE_HISTORY"] = QVariant(1000);
-    */
+#ifdef Q_OS_LINUX
     defaults["DEFAULT_EDITOR"] = QVariant("/usr/bin/geany");
     defaults["DEFAULT_TERMINAL"] = QVariant("/usr/bin/tabby");
     defaults["DEFAULT_BROWSER"] = QVariant("/usr/bin/google-chrome-stable");
+    defaults["GIT_BINARY_PATH"] = QVariant("/usr/bin/git");
     defaults["DEFAULT_REPOSITORY"] = QVariant("~/Projets/");
+#else
+    defaults["DEFAULT_EDITOR"] = QVariant("C:/Program Files/PSPad editor/PSPad.exe");
+    defaults["DEFAULT_TERMINAL"] = QVariant("C:/Program Files (x86)/Mobatek/MobaXterm/MobaXterm.exe");
+    defaults["DEFAULT_BROWSER"] = QVariant("C:/Program Files/Google/Chrome/Application/chrome.exe");
+    defaults["GIT_BINARY_PATH"] = QVariant("C:/Program Files (x86)/git/git.exe");
+    defaults["DEFAULT_REPOSITORY"] = QVariant("C:/Projets/");
+#endif
     defaults["MRU_PROJECTS"] = QVariant(5);
     defaults["PROJECT_USER_NAME"] = QVariant("");
     defaults["PROJECT_USER_COMPANY"] = QVariant("");
     defaults["PROJECT_USER_MAIL"] = QVariant("");
     defaults["PROJECT_USER_WEB"] = QVariant("");
-
+    defaults["DATETIME_FORMAT"] = QVariant("dddd, d MMMM yyyy @ hh:mm:ss");
     // Read the settings from user's settings
     read();
 

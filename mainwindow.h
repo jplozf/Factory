@@ -17,6 +17,7 @@
 #include <QFileSystemModel>
 #include <QDir>
 #include <QMessageBox>
+#include <QMenu>
 
 #include "ui_mainwindow.h"
 #include "settings.h"
@@ -24,6 +25,9 @@
 #include "utils.h"
 #include "dialogs.h"
 #include "downloader.h"
+#include "project.h"
+#include "app.h"
+#include "gitapi.h"
 
 #ifdef Q_OS_LINUX
 #include <QtX11Extras/QX11Info>
@@ -45,22 +49,37 @@ public:
     QVector<QString> mruProjects;
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    QString appDir;
-    QString docDir;
     QString launcherDir;
     QString currentLauncherDir;
-    Settings *appSettings;
-    Constants *appConstants;
     void closeEvent(QCloseEvent *);
     void saveSettings();
     void readSettings();
     QFileSystemModel *model;
+    App *app;
+    QList<QStringList> helpFiles;
+    GitAPI *git;
+
+protected:
+    void mouseMoveEvent(QMouseEvent* event);
+    void mousePressEvent(QMouseEvent* event);
+    void mouseReleaseEvent(QMouseEvent* event);
 
 private:
+    Project *project;
     Ui::MainWindow *ui;
-    void launchProgram(QString pgm);
+    void launchProgram(const QString pgm);
     void openProject(QString project);
     void closeProject();
+    void setHelpFilesInToolbar(const QList<QStringList> helpFiles);
+    QPoint mLastMousePosition;
+    bool mMoving;
+    bool runningSession;
+    const int TAB_PROJECT = 0;
+    const int TAB_EDIT = 1;
+    const int TAB_BUILD = 2;
+    const int TAB_RUN = 3;
+    const int TAB_GIT = 4;
+    const int TAB_SETTINGS = 5;
 
 private slots:
     void slotDoEdit();
@@ -80,9 +99,7 @@ private slots:
     void slotDoRenameFile();
     void slotDoDeleteFile();
     void slotDoPropertiesFile();
-    void slotDoNewProject();
     void slotDoOpenProject();
-    void slotDoOpenRecentProject(QString);
     void slotDoPropertiesProject();
     void slotDoArchiveProject();
     void slotDoCloseProject();

@@ -212,5 +212,6 @@
         <file>templates/cpp/raw/project.cpp</file>
         <file>templates/rust/raw/project.rs</file>
         <file>templates/README.md</file>
+        <file>templates/PROJECT.frx</file>
     </qresource>
 </RCC>
