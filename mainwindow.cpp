@@ -468,7 +468,7 @@ void MainWindow::slotDoubleClickedProject(QModelIndex idx) {
     qDebug() << model->filePath(idx);
     bool isDir = model->isDir(idx);
     if (!isDir) {
-        launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + model->filePath(idx) + "\"");
+        launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString(), {model->filePath(idx)});
     }
 }
 
