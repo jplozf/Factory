@@ -281,9 +281,8 @@ void MainWindow::slotDoCloseProject() {
 //******************************************************************************
 // launchProgram()
 //******************************************************************************
-void MainWindow::launchProgram(const QString pgm) {
-    qDebug() << pgm;
-    QStringList args;
+void MainWindow::launchProgram(const QString pgm, const QStringList args) {
+    qDebug() << pgm << args;
     QProcess::startDetached(pgm, args);
 }
 
@@ -381,7 +380,7 @@ void MainWindow::slotDoEdit() {
 void MainWindow::slotDoEditFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
-    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + f + "\"");
+    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString(), {f});
 }
 
 //******************************************************************************
@@ -390,8 +389,11 @@ void MainWindow::slotDoEditFile() {
 void MainWindow::slotDoDefaultFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
+#ifdef Q_OS_LINUX
+    QString url = QString("file://%1").arg(f);
+#else
     QString url = QString("file:///%1").arg(f);
-    // TODO : Test for non regression in Linux, since I added a third backslash after "file:"
+#endif
     qDebug() << url;
     QDesktopServices::openUrl(QUrl(QString(url), QUrl::TolerantMode));
 }
@@ -419,7 +421,7 @@ void MainWindow::slotDoLaunchTerminal() {
 void MainWindow::slotDoBrowseFile() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
-    launchProgram(app->appSettings->get("DEFAULT_BROWSER").toString() + " \"" + f + "\"");
+    launchProgram(app->appSettings->get("DEFAULT_BROWSER").toString(), {f});
 }
 
 //******************************************************************************

@@ -67,7 +67,7 @@ protected:
 private:
     Project *project;
     Ui::MainWindow *ui;
-    void launchProgram(const QString pgm);
+    void launchProgram(const QString pgm, const QStringList args={""});
     void openProject(QString project);
     void closeProject();
     void setHelpFilesInToolbar(const QList<QStringList> helpFiles);
