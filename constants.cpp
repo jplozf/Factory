@@ -19,7 +19,7 @@ Constants::Constants()
     constants["APP_FOLDER"]             = std::string(".factory");
     constants["SETTINGS_FILE"]          = std::string("settings.cfg");
     constants["TEMPLATES_FILE"]         = std::string("factory.xml");
-    constants["WEB_REPOSITORY"]         = std::string("http://www.ozf.fr/factory/");
+    constants["WEB_REPOSITORY"] = std::string("https://github.com/jplozf/Factory/tree/main/docs/");
     constants["DOC_SUBFOLDER"]          = std::string("dox");
     constants["PROJECT_FILE_EXTENSION"] = std::string(".frx");
 }

@@ -50,6 +50,7 @@ RESOURCES += \
     Factory.qrc
 
 DISTFILES += \
+    docs/index.txt \
     factory.xml \
     licenses/apache-v2.0.md \
     licenses/artistic-v2.0.md \

@@ -24,6 +24,6 @@ private:
 
 };
 
-// Java, PHP, Go, Rust, Forth, Python, C, C++, Perl
+// Java, PHP, Go, Rust, Forth, Python, C, C++, Perl, Assembler
 
 #endif // LANGUAGES_H

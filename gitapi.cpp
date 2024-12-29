@@ -22,6 +22,7 @@ GitAPI::GitAPI(QString gitBin, Ui::MainWindow *ui) {
     connect(ui->cbxGitCommands, SIGNAL(currentIndexChanged(int)), this, SLOT(slotDoChangeCommandIndex(int)));
     connect(ui->btnGitXeq, SIGNAL(clicked()), this, SLOT(slotDoXeq()));
 
+    slotDoChangeCommandIndex(0);
 }
 
 //******************************************************************************
@@ -66,6 +67,7 @@ GitAPI::xeqResult GitAPI::xeq(QStringList params) {
         xr.err = "GitAPI::Git binary not set";
     }
     ui->lblGitRC->setText("RC=" + QString::number(xr.rc));
+    ui->lblGitRC->setToolTip(xr.err);
     return xr;
 }
 
@@ -110,6 +112,13 @@ void GitAPI::slotDoXeq() {
     qDebug() << gxr.err;
     qDebug() << gxr.rc;
     */
+    // TODO : check in command if %KEYWORD% and replace it with cbxGitParams.text
+    foreach(QString p, this->command) {
+        if (p[0] == "%") {
+
+        }
+    }
+
     GitAPI::xeqResult gxr = xeq(this->command);
     ui->txtGitOutput->append("> git " + this->command.join(" "));
     ui->txtGitOutput->append(gxr.out);
