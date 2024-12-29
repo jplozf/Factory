@@ -4,6 +4,7 @@
 // downloadFile()
 //******************************************************************************
 void Downloader::downloadFile(const QString& url, const QString& target) {
+    qDebug() << url << target;
     QNetworkAccessManager manager;
     QNetworkReply *response = manager.get(QNetworkRequest(QUrl(url)));
     QEventLoop event;

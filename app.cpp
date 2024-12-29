@@ -26,7 +26,7 @@ App::App() {
         QDir().mkdir(docDir);
     }
     QList<QStringList> f = Downloader::getFilesFromIndex(appConstants->getQString("WEB_REPOSITORY") + "index.txt");
-    foreach(QStringList item, f) {
+    foreach(QStringList item, f) {        
         Downloader::downloadFile(appConstants->getQString("WEB_REPOSITORY") + item[0], docDir + item[0]);
     }
 }
