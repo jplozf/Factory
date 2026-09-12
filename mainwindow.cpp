@@ -51,10 +51,25 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     connect(ui->btnExit, SIGNAL(clicked()), this, SLOT(slotDoExit()));
     connect(ui->action_Exit, SIGNAL(triggered()), this, SLOT(slotDoExit()));
 
+    connect(ui->btnPin, SIGNAL(clicked()), this, SLOT(slotDoPin()));
+
     readSettings();
-    app->appSettings->form(ui->boxSettings);
+    app->appSettings->form(ui->scaSettings);
     connect(app->appSettings->btnTemplatesCutomizing, SIGNAL(clicked()), this, SLOT(slotDoTemplatesCutomizing()));
     app->mruProjects = this->mruProjects;
+
+    ui->btnArchiveProject->setToolTip("Archive this project");
+    ui->btnCloseProject->setToolTip("Close this project");
+    ui->btnOpenProject->setToolTip("Open a project");
+    ui->btnPropertiesProject->setToolTip("Properties of this project");
+    ui->btnBrowser->setToolTip("Open the browser");
+    ui->btnBuild->setToolTip("Build");
+    ui->btnEdit->setToolTip("Open the editor");
+    ui->btnExit->setToolTip("Exit the Factory");
+    ui->btnPin->setToolTip("Pin / Unpin the Factory");
+    ui->btnSettings->setToolTip("Settings");
+    ui->btnTerm->setToolTip("Opent the terminal");
+    IsVisible = true;
 }
 
 //******************************************************************************
@@ -139,15 +154,13 @@ void MainWindow::saveSettings() {
     //**************************************************************************
     // MRU Projects saving
     //**************************************************************************
-    QVectorIterator<QString> iProjects(mruProjects);
     int jProjects(0);
     int cProjects(0);
     int mProjetcs(app->appSettings->get("MRU_PROJECTS").toInt());
     int eProjects(mruProjects.length());
     qDebug() << eProjects;
     registry.beginWriteArray("Projects");
-    while (iProjects.hasNext()) {
-        QString project = iProjects.next();
+    for (const QString &project : mruProjects) {
         if ((eProjects - cProjects) <= mProjetcs) {
             registry.setArrayIndex(jProjects++);
             registry.setValue("Project", project);
@@ -173,7 +186,7 @@ void MainWindow::readSettings() {
 
     const QByteArray geometry = registry.value("geometry", QByteArray()).toByteArray();
     if (geometry.isEmpty()) {
-        const QRect availableGeometry = QApplication::desktop()->availableGeometry();
+        const QRect availableGeometry = QGuiApplication::primaryScreen()->availableGeometry();
         resize(availableGeometry.width() / 3, availableGeometry.height() / 2);
         move((availableGeometry.width() - width()) / 2, (availableGeometry.height() - height()) / 2);
     } else {
@@ -290,7 +303,7 @@ void MainWindow::launchProgram(const QString pgm, const QStringList args) {
 // openProject()
 //******************************************************************************
 void MainWindow::openProject(QString projectPath) {
-    if(runningSession==true && project!=NULL) {
+    if (runningSession == true && this->project != NULL) {
         closeProject();
     }
     this->projectPath = projectPath;
@@ -350,9 +363,9 @@ void MainWindow::closeProject() {
     ui->btnCloseProject->setEnabled(false);
     ui->btnPropertiesProject->setEnabled(false);
 
-    if (project!=NULL) {
-        project->endSession();
-        project->close();
+    if (this->project != NULL) {
+        this->project->endSession();
+        this->project->close();
     }
 
     runningSession = false;
@@ -449,7 +462,7 @@ void MainWindow::slotDoBrowser() {
 // slotDoSettings()
 //******************************************************************************
 void MainWindow::slotDoSettings() {
-    app->appSettings->form(ui->boxSettings);
+    app->appSettings->form(ui->scaSettings);
     ui->toolBox->setCurrentIndex(TAB_SETTINGS);
 }
 
@@ -712,4 +725,95 @@ void MainWindow::slotDoTemplatesCutomizing() {
     // launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " " + app->appDir + QDir::separator() + "factory.xml");
     // launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + f + "\"");
     launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + app->appDir + "/factory.xml" + "\"");
+}
+
+//******************************************************************************
+// slotDoPin()
+//******************************************************************************
+void MainWindow::slotDoPin()
+{
+    if (IsVisible == true) {
+        saveSettings();
+
+        // QScreen *myScreen = QGuiApplication::primaryScreen();
+        // QRect screenGeometry = myScreen->availableGeometry();
+
+        // QScreen *pScreen = QGuiApplication::screenAt(this->mapToGlobal({this->width()/2,0}));
+        QScreen *pScreen = getActiveScreen(this);
+        QRect availableScreenSize = pScreen->availableGeometry();
+
+        // QDesktopWidget widget;
+        // QRect screenGeometry = widget.screenGeometry();//.availableGeometry(widget.primaryScreen());
+        int height = this->pos().y() + ui->btnPin->pos().y();
+        /*
+        bool topBar = appSettings->get("TITLE_BAR_POSITION_TOP").toBool();
+        if (topBar == false) {
+            height += this->height();
+        }
+        */
+
+        qDebug("Screen Width = %d", availableScreenSize.width());
+        qDebug("Screen Left  = %d", availableScreenSize.left());
+        int width = availableScreenSize.width() + availableScreenSize.left() - ui->btnPin->width()
+                    - 2;
+        qDebug("POS          = %d", width);
+        // shrink the window as the titlebar only
+        this->layout()->setSizeConstraint(QLayout::SetFixedSize);
+        // hide unnecessary controls in the titlebar
+        IsVisible=false;
+        this->ui->lblTitle->setVisible(false);
+        this->ui->horizontalSpacer_3->changeSize(0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
+        this->ui->horizontalSpacer_3->invalidate();
+        this->ui->btnExit->setVisible(false);
+        this->ui->toolBox->setVisible(false);
+        this->ui->btnBrowser->setVisible(false);
+        this->ui->btnEdit->setVisible(false);
+        this->ui->btnTerm->setVisible(false);
+        this->ui->btnBuild->setVisible(false);
+        this->ui->horizontalSpacer->changeSize(0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
+        this->ui->horizontalSpacer->invalidate();
+        this->ui->btnSettings->setVisible(false);
+        this->ui->statusbar->setVisible(false);
+
+        // move the remaining button against the edge of the screen
+        move(width, height);
+
+    } else {
+        this->layout()->setSizeConstraint(QLayout::SetMinAndMaxSize);
+        this->setVisible(true);
+        IsVisible=true;
+
+        this->ui->lblTitle->setVisible(true);
+        this->ui->horizontalSpacer_3->changeSize(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        this->ui->horizontalSpacer_3->invalidate();
+        this->ui->btnExit->setVisible(true);
+        this->ui->toolBox->setVisible(true);
+        this->ui->btnBrowser->setVisible(true);
+        this->ui->btnEdit->setVisible(true);
+        this->ui->btnTerm->setVisible(true);
+        this->ui->btnBuild->setVisible(true);
+        this->ui->horizontalSpacer->changeSize(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+        this->ui->horizontalSpacer->invalidate();
+        this->ui->btnSettings->setVisible(true);
+        this->ui->statusbar->setVisible(true);
+        readSettings();
+    }
+}
+
+//******************************************************************************
+// getActiveScreen()
+//******************************************************************************
+QScreen *MainWindow::getActiveScreen(
+    QWidget *pWidget) const
+{
+    QScreen *pActive = nullptr;
+    while (pWidget) {
+        auto w = pWidget->windowHandle();
+        if (w != nullptr) {
+            pActive = w->screen();
+            break;
+        } else
+            pWidget = pWidget->parentWidget();
+    }
+    return pActive;
 }

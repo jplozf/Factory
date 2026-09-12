@@ -25,6 +25,7 @@ Settings::Settings()
     defaults["PROJECT_USER_MAIL"] = QVariant("");
     defaults["PROJECT_USER_WEB"] = QVariant("");
     defaults["DATETIME_FORMAT"] = QVariant("dddd, d MMMM yyyy @ hh:mm:ss");
+    defaults["CONFIRM_EXIT"] = QVariant(true);
     // Read the settings from user's settings
     read();
 

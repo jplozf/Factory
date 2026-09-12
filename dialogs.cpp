@@ -1,5 +1,6 @@
 #include "dialogs.h"
 #include "qfiledialog.h"
+#include <QVectorIterator>
 
 //******************************************************************************
 // DlgProperties()

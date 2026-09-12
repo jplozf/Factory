@@ -1,23 +1,27 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QMainWindow>
-#include <QCloseEvent>
-#include <QProcess>
-#include <QSettings>
 #include <QApplication>
-#include <QDesktopWidget>
-#include <QStandardItemModel>
-#include <QDesktopServices>
-#include <QFileDialog>
-#include <QInputDialog>
+#include <QCloseEvent>
 #include <QDebug>
-#include <QPainter>
-#include <QDirModel>
-#include <QFileSystemModel>
+#include <QDesktopServices>
+#include <QScreen>
+#include <QGuiApplication>
 #include <QDir>
-#include <QMessageBox>
+#include <QFileSystemModel>
+#include <QFileDialog>
+#include <QFileSystemModel>
+#include <QGuiApplication>
+#include <QInputDialog>
+#include <QMainWindow>
 #include <QMenu>
+#include <QMessageBox>
+#include <QPainter>
+#include <QProcess>
+#include <QScreen>
+#include <QSettings>
+#include <QStandardItemModel>
+#include <QWindow>
 
 #include "ui_mainwindow.h"
 #include "settings.h"
@@ -30,7 +34,7 @@
 #include "gitapi.h"
 
 #ifdef Q_OS_LINUX
-#include <QtX11Extras/QX11Info>
+#include <QGuiApplication>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <QFileSystemModel>
@@ -65,7 +69,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event);
 
 private:
-    Project *project;
+    Project *project = NULL;
     Ui::MainWindow *ui;
     void launchProgram(const QString pgm, const QStringList args={""});
     void openProject(QString project);
@@ -80,6 +84,8 @@ private:
     const int TAB_RUN = 3;
     const int TAB_GIT = 4;
     const int TAB_SETTINGS = 5;
+    QScreen *getActiveScreen(QWidget *pWidget) const;
+    bool IsVisible;
 
 private slots:
     void slotDoEdit();
@@ -89,6 +95,7 @@ private slots:
     void slotDoLaunchFile();
     void slotDoLaunchTerminal();
     void slotDoExit();
+    void slotDoPin();
     void slotDoTemplatesCutomizing();
 
     void slotDoNewItem();

@@ -338,7 +338,10 @@ void Project::startSession() {
 // endSession()
 //******************************************************************************
 void Project::endSession() {
+    qDebug() << "end session";
+    qDebug() << projectFile;
     this->sessionEnd = QDateTime::currentDateTime().toString("yyyyMMdd-hhmmss");
+    qDebug() << projectFile;
     QFile XMLFile(projectFile);
     QDomDocument document;
     if (!XMLFile.open(QIODevice::ReadWrite | QIODevice::Text)) {

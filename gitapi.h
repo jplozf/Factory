@@ -39,6 +39,8 @@ private slots:
     void slotDoClearOutput();
     void slotDoChangeCommandIndex(int);
     void slotDoXeq();
+    void on_btnPin_clicked();
+    void on_btnTerm_clicked();
 };
 
 #endif // GITAPI_H

@@ -52,7 +52,7 @@ QString GitAPI::getRootFolder() {
 GitAPI::xeqResult GitAPI::xeq(QStringList params) {
     xeqResult xr;
     QProcess p;
-    if (this->gitBin != NULL && QFile::exists(this->gitBin)) {
+    if (!this->gitBin.isEmpty() && QFile::exists(this->gitBin)) {
         p.setWorkingDirectory(this->rootFolder);
         p.start(this->gitBin, params);
         p.waitForFinished();
@@ -124,3 +124,6 @@ void GitAPI::slotDoXeq() {
     ui->txtGitOutput->append(gxr.out);
 }
 
+void GitAPI::on_btnPin_clicked() {}
+
+void GitAPI::on_btnTerm_clicked() {}
