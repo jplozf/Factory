@@ -21,6 +21,7 @@ Constants::Constants()
     constants["TEMPLATES_FILE"]         = std::string("factory.xml");
     constants["WEB_REPOSITORY"] = std::string(
         "https://raw.githubusercontent.com/jplozf/Factory/refs/heads/main/docs/");
+    constants["WEB_INDEX"] = std::string("index.txt");
     constants["DOC_SUBFOLDER"]          = std::string("dox");
     constants["PROJECT_FILE_EXTENSION"] = std::string(".frx");
 }
