@@ -18,20 +18,6 @@ void Downloader::downloadFile(const QString& url, const QString& target) {
 }
 
 //******************************************************************************
-// getMD5FromLocalFile()
-//******************************************************************************
-QString Downloader::getMD5FromLocalFile(const QString& file) {
-    QFile f(file);
-    if (f.open(QFile::ReadOnly)) {
-        QCryptographicHash hash(QCryptographicHash::Md5);
-        if (hash.addData(&f)) {
-            return hash.result();
-        }
-    }
-    return QByteArray().toHex();
-}
-
-//******************************************************************************
 // getFilesFromIndex()
 //******************************************************************************
 QList<QStringList> Downloader::getFilesFromIndex(const QString& url) {

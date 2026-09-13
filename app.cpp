@@ -25,24 +25,16 @@ App::App() {
         QDir().mkdir(docDir);
     }
     QList<QStringList> f = Downloader::getFilesFromIndex(appConstants->getQString("WEB_REPOSITORY") + appConstants->getQString("WEB_INDEX"));
-    /*
-    foreach(QStringList item, f) {
-        Downloader::downloadFile(appConstants->getQString("WEB_REPOSITORY") + item[0],
-                                 docDir + QDir::separator() + item[0]);
-    }
-    */
     foreach (const QStringList &item, f) {
-        QString fileName = item[0];      // e.g. "guide.pdf"
-        QString remoteHash = item[1];    // e.g. "a1b2c3..." (if provided by index)
-
+        QString fileName = item[0];
+        QString remoteHash = item[1];
         QString targetPath = docDir + QDir::separator() + fileName;
         QFileInfo fileInfo(targetPath);
-
+        QString localHash = Utils::fileHash(targetPath, QCryptographicHash::Md5);
         // Skip if file exists and hash matches local file hash
-        if (fileInfo.exists() && Downloader::getMD5FromLocalFile(targetPath) == remoteHash) {
+        if (fileInfo.exists() && localHash == remoteHash) {
             continue;
         }
-
         Downloader::downloadFile(appConstants->getQString("WEB_REPOSITORY") + fileName, targetPath);
     }
 }

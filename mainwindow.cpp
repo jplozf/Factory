@@ -127,16 +127,20 @@ void MainWindow::slotDoExit() {
 // closeEvent()
 //******************************************************************************
 void MainWindow::closeEvent(QCloseEvent *event) {
-    QMessageBox::StandardButton rc;
-    rc = QMessageBox::question(this, app->appConstants->getQString("APPLICATION_NAME"), QString("Close the factory ?\n"), QMessageBox::Yes|QMessageBox::No);
-    if (rc == QMessageBox::Yes) {
-        saveSettings();
-        if (runningSession == true && project!=NULL) {
-            closeProject();
+    if (app->appSettings->get("CONFIRM_EXIT").toBool()) {
+        QMessageBox::StandardButton rc;
+        rc = QMessageBox::question(this, app->appConstants->getQString("APPLICATION_NAME"), QString("Close the factory ?\n"), QMessageBox::Yes|QMessageBox::No);
+        if (rc == QMessageBox::Yes) {
+            saveSettings();
+            if (runningSession == true && project!=NULL) {
+                closeProject();
+            }
+            event->accept();
+        } else {
+            event->ignore();
         }
-        event->accept();
     } else {
-        event->ignore();
+        event->accept();
     }
 }
 

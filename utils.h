@@ -30,6 +30,7 @@ public:
     static QString getExtension(QString file);
     static QString tsToString(QString ts, QString fmt="dddd d MMMM yyyy @ hh:mm:ss");
     static QString secondsToString(qint64 seconds);
+    static QString fileHash(const QString &filePath, QCryptographicHash::Algorithm algorithm = QCryptographicHash::Sha256);
 };
 
 #endif // UTILS_H

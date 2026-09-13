@@ -167,3 +167,27 @@ QString Utils::secondsToString(qint64 seconds) {
     return QString("%1 days, %2 hours, %3 minutes, %4 seconds").arg(days).arg(t.hour()).arg(t.minute()).arg(t.second());
 }
 
+//******************************************************************************
+// fileHash()
+//******************************************************************************
+QString Utils::fileHash(const QString &filePath, QCryptographicHash::Algorithm algorithm) {
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        return QString(); // Return empty string if file cannot be opened
+    }
+
+    QCryptographicHash hasher(algorithm);
+
+    // Read in 64 KB chunks to keep memory usage low
+    constexpr qint64 chunkSize = 65536;
+    while (!file.atEnd()) {
+        QByteArray buffer = file.read(chunkSize);
+        hasher.addData(buffer);
+    }
+
+    file.close();
+
+    // Return lowercase hexadecimal string representation of the hash
+    return QString::fromLatin1(hasher.result().toHex());
+}
+
