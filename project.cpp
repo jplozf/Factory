@@ -8,29 +8,35 @@ QFile Project::FactoryFile;
 //******************************************************************************
 QList<QString> Project::getLanguages(QString appDir) {
     QList<QString> languages;
+
     FactoryFile.setFileName(appDir + QDir::separator() + "factory.xml");
     if (!FactoryFile.open(QFile::ReadOnly | QFile::Text)) {
-        qDebug() << "Error loading XML file.";
+        qDebug() << "Error opening file:" << FactoryFile.errorString();
+        return languages;
     }
+
     Project::xml.setDevice(&FactoryFile);
-    while(!Project::xml.atEnd()) {
-       if (Project::xml.isStartElement()) {
-           QString name = Project::xml.name().toString();
-           if (name == "language") {
-               for (int i = 0; i < Project::xml.attributes().size(); i++) {
-                   QString attName = Project::xml.attributes().at(i).name().toString();
-                   if (attName == "tag") {
-                       QString language = Project::xml.attributes().at(i).value().toString();
-                       languages.append(language);
-                   }
-               }
-           }
-       }
-       Project::xml.readNext();
+
+    while (!Project::xml.atEnd() && !Project::xml.hasError()) {
+        QXmlStreamReader::TokenType token = Project::xml.readNext();
+
+        if (token == QXmlStreamReader::StartElement) {
+            if (Project::xml.name() == QLatin1String("language")) {
+                QXmlStreamAttributes attrs = Project::xml.attributes();
+                if (attrs.hasAttribute("tag")) {
+                    languages.append(attrs.value("tag").toString());
+                }
+            }
+        }
     }
+
     if (Project::xml.hasError()) {
-        qDebug() << "Error loading XML : " << Project::xml.errorString();
+        qDebug() << "Error parsing XML at line"
+                 << Project::xml.lineNumber()
+                 << "col" << Project::xml.columnNumber()
+                 << ":" << Project::xml.errorString();
     }
+
     FactoryFile.close();
     return languages;
 }

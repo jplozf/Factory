@@ -8,3 +8,5 @@ cppreference.chm, 16bca02a9fdf054d872d8a29c484a1be
 go1.14.4.chm, 261c1296f2d3cf9d59cbdf094397e562
 javascript.chm, 488c5ed496e7a8716b9eb3ee0b2b390d
 rust.chm, e8944678b5be6db8742092b8ece3b4ce
+Python-3.13.x-Core-Reference-and-Examples-v1.10.chm, dc60cb3ae558d1eaf5af4121eb703a4b
+python3110a6.chm, 6937cc18553d73097733e18aee811274

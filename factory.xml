@@ -8,7 +8,8 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="Python Help" source="%DOC_FOLDER%/python396.chm"/>
+                    <help tag="Python Help" source="%DOC_FOLDER%/python3110a6.chm"/>
+                    <help tag="Python Core and Examples" source="%DOC_FOLDER%/Python-3.13.x-Core-Reference-and-Examples-v1.10.chm"/>
                 </helpfiles>
             </toolkit>
             <toolkit tag="Tkinter">
@@ -17,8 +18,9 @@
                     <file name="README.md" source=":/templates/README.md"/>
                 </files>
                 <helpfiles>
-                    <help tag="Python Help" source="%DOC_FOLDER%/python396.chm"/>
+                    <help tag="Python Help" source="%DOC_FOLDER%/python3110a6.chm"/>
                     <help tag="Tkinter Help" source="%DOC_FOLDER%/an-introduction-to-tkinter.chm"/>
+                    <help tag="Python Core and Examples" source="%DOC_FOLDER%/Python-3.13.x-Core-Reference-and-Examples-v1.10.chm"/>
                 </helpfiles>
             </toolkit>
             <toolkit tag="Qt5">
@@ -29,7 +31,8 @@
                 <file name="README.md" source=":/templates/README.md"/>
             </files>
             <helpfiles>
-                <help tag="Python Help" source="%DOC_FOLDER%/python396.chm"/>
+                <help tag="Python Help" source="%DOC_FOLDER%/python3110a6.chm"/>
+                <help tag="Python Core and Examples" source="%DOC_FOLDER%/Python-3.13.x-Core-Reference-and-Examples-v1.10.chm"/>
             </helpfiles>
             </toolkit>
         </toolkits>
@@ -85,7 +88,19 @@
         </toolkits>
     </language>
     <language tag="Java"></language>
-    <language tag="Go"></language>
+    <language tag="Go">
+        <toolkits>
+            <toolkit tag="Raw">
+                <files>
+                    <file name="%PROJECT%.go" source=":/templates/go/raw/main.go"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="Go Help" source="%DOC_FOLDER%/go1.14.4.chm"/>
+                </helpfiles>
+            </toolkit>
+        </toolkits>
+    </language>
     <language tag="HTML"></language>
     <language tag="XML"></language>
     <language tag="CSS"></language>
