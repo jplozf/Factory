@@ -70,6 +70,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     ui->btnSettings->setToolTip("Settings");
     ui->btnTerm->setToolTip("Opent the terminal");
     IsVisible = true;
+    ui->lblTitle->setText(QString("%1 v%2.%3-%4")
+                             .arg(app->appConstants->getQString("APPLICATION_NAME"))
+                             .arg(APP_VERSION)
+                             .arg(GIT_COMMIT_COUNT)
+                             .arg(GIT_HASH));
 }
 
 //******************************************************************************
