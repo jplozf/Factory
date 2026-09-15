@@ -13,7 +13,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     setWindowFlags(Qt::FramelessWindowHint| Qt::WindowSystemMenuHint | Qt::WindowStaysOnTopHint | Qt::Dialog | Qt::Tool);
     setWindowFlags(windowFlags() | Qt::WindowMinimizeButtonHint);
     setAttribute(Qt::WA_QuitOnClose, true);
-    setAttribute(Qt::WA_DeleteOnClose, true);
+    // The following instruction leads to a "double free or corruption (out)" error on exit
+    // setAttribute(Qt::WA_DeleteOnClose, true);
     setStyleSheet("#borderlessMainWindow{border:1px solid palette(highlight);}");
 
     connect(ui->btnOpenProject, SIGNAL(clicked()), this, SLOT(slotDoOpenProject()));
@@ -783,6 +784,12 @@ void MainWindow::slotDoPin()
         this->ui->horizontalSpacer->invalidate();
         this->ui->btnSettings->setVisible(false);
         this->ui->statusbar->setVisible(false);
+        for (int i = 0; i < ui->layToolbar->count(); ++i) {
+            QLayoutItem *item = ui->layToolbar->itemAt(i);
+            if (item && item->widget()) {
+                item->widget()->setVisible(false);
+            }
+        }
 
         // move the remaining button against the edge of the screen
         move(width, height);
@@ -805,6 +812,12 @@ void MainWindow::slotDoPin()
         this->ui->horizontalSpacer->invalidate();
         this->ui->btnSettings->setVisible(true);
         this->ui->statusbar->setVisible(true);
+        for (int i = 0; i < ui->layToolbar->count(); ++i) {
+            QLayoutItem *item = ui->layToolbar->itemAt(i);
+            if (item && item->widget()) {
+                item->widget()->setVisible(true);
+            }
+        }
         readSettings();
     }
 }
