@@ -58,6 +58,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     readSettings();
     app->appSettings->form(ui->scaSettings);
     connect(app->appSettings->btnTemplatesCutomizing, SIGNAL(clicked()), this, SLOT(slotDoTemplatesCutomizing()));
+    connect(app->appSettings->btnTemplatesReset, SIGNAL(clicked()), this, SLOT(slotDoTemplatesReset()));
     app->mruProjects = this->mruProjects;
 
     ui->btnArchiveProject->setToolTip("Archive this project");
@@ -765,14 +766,46 @@ void MainWindow::slotDoPropertiesFile() {
 // slotDoTemplatesCutomizing()
 //******************************************************************************
 void MainWindow::slotDoTemplatesCutomizing() {
-    /*
-    Constants *appConstants = new Constants();
-    QDir appDir = QDir(QDir::homePath()).filePath(appConstants->getQString("APP_FOLDER"));
-    Utils:: copyDirectoryNested(":/templates", appDir.path() + QDir::separator() + "templates" );
-    */
-    // launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " " + app->appDir + QDir::separator() + "factory.xml");
-    // launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + f + "\"");
-    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString() + " \"" + app->appDir + "/factory.xml" + "\"");
+    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString(), {app->appDir + QDir::separator() + app->appConstants->getQString("TEMPLATES_FILE")});
+}
+
+//******************************************************************************
+// slotDoTemplatesReset()
+//******************************************************************************
+void MainWindow::slotDoTemplatesReset() {
+    QMessageBox::StandardButton rc;
+    rc = QMessageBox::question(this, app->appConstants->getQString("APPLICATION_NAME"), QString("Resetting the default templates file ?\n"), QMessageBox::Yes|QMessageBox::No);
+    if (rc == QMessageBox::Yes) {
+        QString localFile = app->appDir + QDir::separator() + app->appConstants->getQString("TEMPLATES_FILE");
+        QString backupFile   = localFile + ".orig";
+        if (QFile::exists(backupFile)) {
+            // a local backup file exists
+            // remove the local file before
+            if (QFile::exists(localFile)) {
+                QFile::remove(localFile);
+            }
+            // duplicating the original templates file
+            if (QFile::copy(backupFile, localFile)) {
+                qDebug() << "templates file restored";
+            } else {
+                qDebug() << "templates file NOT restored";
+            }
+        } else {
+            // there is no local backup file
+            QString distantFile = app->appConstants->getQString("WEB_REPOSITORY") + app->appConstants->getQString("TEMPLATES_FILE");
+            // remove the local file before
+            if (QFile::exists(localFile)) {
+                QFile::remove(localFile);
+            }
+            Downloader::downloadFile(distantFile, localFile);
+            // Duplicate it
+            if (QFile::copy(localFile, backupFile)) {
+                qDebug() << "templates file duplicated";
+            } else {
+                qDebug() << "templates file NOT duplicated";
+            }
+        }
+    }
 }
 
 //******************************************************************************

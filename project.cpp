@@ -834,7 +834,7 @@ QString Project::getBuildCommand(QString appDir) {
 
     // 2. Fall back to factory.xml matching the <language tag="...">
     if (buildCmd.isEmpty()) {
-        FactoryFile.setFileName(appDir + QDir::separator() + "factory.xml");
+        FactoryFile.setFileName(appDir + QDir::separator() + app->appConstants->getQString("TEMPLATES_FILE"));
         if (FactoryFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QDomDocument doc;
             if (doc.setContent(&FactoryFile)) {
@@ -892,7 +892,7 @@ QString Project::getRunCommand(QString appDir, bool &inTerminal) {
 
     // 2. Fall back to factory.xml matching the <language tag="...">
     if (runCmd.isEmpty()) {
-        FactoryFile.setFileName(appDir + QDir::separator() + "factory.xml");
+        FactoryFile.setFileName(appDir + QDir::separator() + app->appConstants->getQString("TEMPLATES_FILE"));
         if (FactoryFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
             QDomDocument doc;
             if (doc.setContent(&FactoryFile)) {
