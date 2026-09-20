@@ -186,7 +186,7 @@ void DlgOpenProject::slotAccept() {
         break;
 
         case 1:         // TAB OPEN PROJECT
-        projectPath = lblOpenProject->text();
+        projectPath = lblOpenProject->text();            
         break;
 
         case 2:         // TAB RECENT PROJECTS

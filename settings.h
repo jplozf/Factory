@@ -31,6 +31,7 @@ public:
     QMap<QString, QVariant> settings;
     QVariant get(QString param);
     QPushButton *btnTemplatesCutomizing;
+    QPushButton *btnTemplatesReset;
     void write();
     void read();
     void form(QWidget *);

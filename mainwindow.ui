@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>346</width>
+    <width>349</width>
     <height>523</height>
    </rect>
   </property>
@@ -27,7 +27,7 @@
       <item>
        <spacer name="horizontalSpacer_3">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -109,14 +109,14 @@
         </property>
         <property name="icon">
          <iconset resource="Factory.qrc">
-          <normaloff>:/icons/icons/Under Construction.png</normaloff>:/icons/icons/Under Construction.png</iconset>
+          <normaloff>:/icons/icons/Nuke.png</normaloff>:/icons/icons/Nuke.png</iconset>
         </property>
        </widget>
       </item>
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -145,7 +145,7 @@
     <item row="3" column="0">
      <widget class="QTabWidget" name="toolBox">
       <property name="currentIndex">
-       <number>5</number>
+       <number>2</number>
       </property>
       <property name="usesScrollButtons">
        <bool>false</bool>
@@ -154,10 +154,32 @@
        <bool>false</bool>
       </property>
       <widget class="QWidget" name="boxProject">
+       <property name="font">
+        <font>
+         <bold>true</bold>
+        </font>
+       </property>
        <attribute name="title">
         <string>Project</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
+        <item row="1" column="0">
+         <widget class="QScrollArea" name="scrollArea2">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scaProjectProperties">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>307</width>
+             <height>329</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
         <item row="0" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <property name="spacing">
@@ -217,7 +239,7 @@
           <item>
            <spacer name="horizontalSpacer_4">
             <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+             <enum>Qt::Orientation::Horizontal</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -246,9 +268,6 @@
           </item>
          </layout>
         </item>
-        <item row="1" column="0">
-         <widget class="QListWidget" name="lstProjectProperties"/>
-        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="boxEdit">
@@ -265,11 +284,127 @@
        <attribute name="title">
         <string>Build</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_5">
+        <item row="0" column="0">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QTextEdit" name="txtBuildOutput">
+            <property name="font">
+             <font>
+              <family>Cascadia Mono</family>
+             </font>
+            </property>
+            <property name="readOnly">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <item>
+             <widget class="QPushButton" name="btnDoBuild">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Factory.qrc">
+                <normaloff>:/icons/icons/Nuke.png</normaloff>:/icons/icons/Nuke.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="txtBuildCommand"/>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnDoSaveBuild">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Factory.qrc">
+                <normaloff>:/icons/icons/Save.png</normaloff>:/icons/icons/Save.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="boxRun">
        <attribute name="title">
         <string>Run</string>
        </attribute>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QTextEdit" name="txtRunOutput">
+            <property name="font">
+             <font>
+              <family>Cascadia Mono</family>
+             </font>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_7">
+            <item>
+             <widget class="QPushButton" name="btnDoRun">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Factory.qrc">
+                <normaloff>:/icons/icons/Player Play.png</normaloff>:/icons/icons/Player Play.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="txtRunCommand"/>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chkRunTerminal">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Factory.qrc">
+                <normaloff>:/icons/icons/Computer.png</normaloff>:/icons/icons/Computer.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnStopRun">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Factory.qrc">
+                <normaloff>:/icons/icons/Close.png</normaloff>:/icons/icons/Close.png</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnDoSaveRun">
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Factory.qrc">
+                <normaloff>:/icons/icons/Save.png</normaloff>:/icons/icons/Save.png</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
       <widget class="QWidget" name="boxGit">
        <attribute name="title">
@@ -342,7 +477,7 @@
           <item>
            <spacer name="horizontalSpacer_5">
             <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+             <enum>Qt::Orientation::Horizontal</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -378,8 +513,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>304</width>
-             <height>360</height>
+             <width>307</width>
+             <height>361</height>
             </rect>
            </property>
           </widget>

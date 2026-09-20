@@ -811,3 +811,111 @@ QString Project::setVars(QString text, QString projectName) {
     return (text);
 }
 
+//******************************************************************************
+// getBuildCommand()
+// Retrieves the build command from factory.xml (or .frx override) and expands variables.
+//******************************************************************************
+QString Project::getBuildCommand(QString appDir) {
+    QString buildCmd;
+
+    // 1. Check if the project file (.frx) has a custom override
+    QFile frxFile(projectFile);
+    if (frxFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QDomDocument doc;
+        if (doc.setContent(&frxFile)) {
+            QDomElement root = doc.documentElement();
+            QDomElement buildElem = root.firstChildElement("build");
+            if (!buildElem.isNull() && !buildElem.text().trimmed().isEmpty()) {
+                buildCmd = buildElem.text().trimmed();
+            }
+        }
+        frxFile.close();
+    }
+
+    // 2. Fall back to factory.xml matching the <language tag="...">
+    if (buildCmd.isEmpty()) {
+        FactoryFile.setFileName(appDir + QDir::separator() + "factory.xml");
+        if (FactoryFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QDomDocument doc;
+            if (doc.setContent(&FactoryFile)) {
+                QDomElement root = doc.documentElement(); // <factory>
+                QDomNodeList languages = root.elementsByTagName("language");
+
+                for (int i = 0; i < languages.count(); ++i) {
+                    QDomElement langElem = languages.at(i).toElement();
+
+                    if (langElem.attribute("tag").compare(projectLanguage, Qt::CaseInsensitive) == 0) {
+                        QDomElement buildNode = langElem.firstChildElement("build");
+                        if (!buildNode.isNull()) {
+                            buildCmd = buildNode.text().trimmed();
+                        }
+                        break;
+                    }
+                }
+            }
+            FactoryFile.close();
+        } else {
+            qDebug() << "Failed to open factory.xml";
+        }
+    }
+
+    return setVars(buildCmd, projectName);
+}
+
+//******************************************************************************
+// getRunCommand()
+// Retrieves the run command from factory.xml (or .frx override) and expands variables.
+//******************************************************************************
+QString Project::getRunCommand(QString appDir, bool &inTerminal) {
+    QString runCmd;
+    inTerminal = false;
+
+    // 1. Check if the project file (.frx) has a custom override
+    QFile frxFile(projectFile);
+    if (frxFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QDomDocument doc;
+        if (doc.setContent(&frxFile)) {
+            QDomElement root = doc.documentElement();
+            QDomElement runElem = root.firstChildElement("run");
+            if (!runElem.isNull()) {
+                if (!runElem.text().trimmed().isEmpty()) {
+                    runCmd = runElem.text().trimmed();
+                }
+
+                // Retrieve the attribute (defaults to "false" if not present)
+                QString inTermAttr = runElem.attribute("inTerminal", "false");
+                inTerminal = (inTermAttr.contains("true", Qt::CaseInsensitive) || inTermAttr == "1");
+            }
+        }
+        frxFile.close();
+    }
+
+    // 2. Fall back to factory.xml matching the <language tag="...">
+    if (runCmd.isEmpty()) {
+        FactoryFile.setFileName(appDir + QDir::separator() + "factory.xml");
+        if (FactoryFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QDomDocument doc;
+            if (doc.setContent(&FactoryFile)) {
+                QDomElement root = doc.documentElement(); // <factory>
+                QDomNodeList languages = root.elementsByTagName("language");
+
+                for (int i = 0; i < languages.count(); ++i) {
+                    QDomElement langElem = languages.at(i).toElement();
+
+                    if (langElem.attribute("tag").compare(projectLanguage, Qt::CaseInsensitive) == 0) {
+                        QDomElement runNode = langElem.firstChildElement("run");
+                        if (!runNode.isNull()) {
+                            runCmd = runNode.text().trimmed();
+                        }
+                        break;
+                    }
+                }
+            }
+            FactoryFile.close();
+        } else {
+            qDebug() << "Failed to open factory.xml";
+        }
+    }
+
+    return setVars(runCmd, projectName);
+}

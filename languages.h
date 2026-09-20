@@ -19,7 +19,9 @@ private:
     {
         {"C", ".c", ".h", ".cats", ".idc", ".w"},
         {"C++", ".cpp", ".c++", ".cc", ".cp", ".cxx", ".hpp", ".h", ".h++", ".hh", ".hxx", ".inc", ".inl", ".ipp", ".tcc", ".tpp"},
-        {"Python", ".py", ".bzl", ".cgi", ".fcgi", ".gyp", ".lmi", ".pyde", ".pyp", ".pyt", ".pyw", ".rpy", ".tac", ".wsgi", ".xpy"}
+        {"Python", ".py", ".bzl", ".cgi", ".fcgi", ".gyp", ".lmi", ".pyde", ".pyp", ".pyt", ".pyw", ".rpy", ".tac", ".wsgi", ".xpy"},
+        {"Go", ".go",".mod"},
+        {"Rust", ".rs"}
     };
 
 };

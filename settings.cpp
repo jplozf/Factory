@@ -26,6 +26,7 @@ Settings::Settings()
     defaults["PROJECT_USER_WEB"] = QVariant("");
     defaults["DATETIME_FORMAT"] = QVariant("dddd, d MMMM yyyy @ hh:mm:ss");
     defaults["CONFIRM_EXIT"] = QVariant(true);
+    defaults["COLOR_ENHANCED"] = QVariant("#54a8d6");
     // Read the settings from user's settings
     read();
 
@@ -87,22 +88,33 @@ void Settings::read() {
 // form()
 //******************************************************************************
 void Settings::form(QWidget *w) {
-    QFormLayout *form = new QFormLayout(w);
-    form->setLabelAlignment(Qt::AlignRight);
-
+    QVBoxLayout *vbox = new QVBoxLayout(w);
     for(auto e : settings.keys())
     {
-        QLabel *lblSetting = new QLabel(e);
+        QLabel *lblSetting = new QLabel("🢒 " + e + " :");
+        lblSetting->setStyleSheet("font-weight: bold;");
+        vbox->addWidget(lblSetting);
+
         QLineEdit *txtSetting = new QLineEdit(settings.value(e).toString());
-        connect(txtSetting, &QLineEdit::textChanged, [=]{handleTextChanged(lblSetting, txtSetting);});
-        form->addRow(lblSetting, txtSetting);
+        connect(txtSetting, &QLineEdit::textChanged, [=]{handleTextChanged(lblSetting, txtSetting);});        
+        vbox->addWidget(txtSetting);
     }
-    QLabel *lblSetting = new QLabel("Templates Customizing");
+
+    QLabel *lblTemplates = new QLabel("🢒 TEMPLATES :");
+    lblTemplates->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lblTemplates);
+    QFormLayout *form = new QFormLayout(w);
+    form->setLabelAlignment(Qt::AlignRight);
+    QLabel *lblTemplatesCustomizing = new QLabel("Customizing");
     btnTemplatesCutomizing = new QPushButton("...");
-    form->addRow(lblSetting, btnTemplatesCutomizing);
+    form->addRow(lblTemplatesCustomizing, btnTemplatesCutomizing);
+    QLabel *lblTemplatesReset = new QLabel("Reset");
+    btnTemplatesReset = new QPushButton("...");
+    form->addRow(lblTemplatesReset, btnTemplatesReset);
     // TODO : Add "Reset Templates Customizing" option
 
-    w->setLayout(form);
+    vbox->addLayout(form);
+    w->setLayout(vbox);
 }
 
 //******************************************************************************

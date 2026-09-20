@@ -50,6 +50,8 @@ public:
     QString getCreationDate();
     QString getModificationDate();
     qint64 getElapsedTime();
+    QString getBuildCommand(QString appDir);
+    QString getRunCommand(QString appDir, bool &inTerminal);
 
 private:
     App *app;

@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "GitTimeEstimator.h"
 
 //******************************************************************************
 // MainWindow()
@@ -61,21 +62,30 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     ui->btnArchiveProject->setToolTip("Archive this project");
     ui->btnCloseProject->setToolTip("Close this project");
-    ui->btnOpenProject->setToolTip("Open a project");
+    ui->btnOpenProject->setToolTip("Manage projects");
     ui->btnPropertiesProject->setToolTip("Properties of this project");
     ui->btnBrowser->setToolTip("Open the browser");
     ui->btnBuild->setToolTip("Build");
     ui->btnEdit->setToolTip("Open the editor");
     ui->btnExit->setToolTip("Exit the Factory");
-    ui->btnPin->setToolTip("Pin / Unpin the Factory");
+    ui->btnPin->setToolTip("Pin the Factory");
     ui->btnSettings->setToolTip("Settings");
-    ui->btnTerm->setToolTip("Opent the terminal");
+    ui->btnTerm->setToolTip("Open the terminal");
+
+    ui->btnDoBuild->setToolTip("Build the current project");
+    ui->btnDoRun->setToolTip("Run the current project");
+    ui->btnDoSaveBuild->setToolTip("Save the customized build command");
+    ui->btnDoSaveRun->setToolTip("Save the customized run command");
+    ui->btnStopRun->setToolTip("Stop or abort the current run");
+    ui->chkRunTerminal->setToolTip("Run the current project in a terminal");
+
     IsVisible = true;
     ui->lblTitle->setText(QString("%1 v%2.%3-%4")
                              .arg(app->appConstants->getQString("APPLICATION_NAME"))
                              .arg(APP_VERSION)
                              .arg(GIT_COMMIT_COUNT)
                              .arg(GIT_HASH));
+    clearProjectProperties();
 }
 
 //******************************************************************************
@@ -235,26 +245,48 @@ void MainWindow::readSettings() {
 // setHelpFilesInToolbar()
 //******************************************************************************
 void MainWindow::setHelpFilesInToolbar(const QList<QStringList> helpFiles) {
-    // First, clear all the previous existing buttons from the layout
+    // 1. Safe layout clearing (no double free)
     QLayoutItem *lItem;
-    while((lItem=ui->layToolbar->takeAt(0))!=NULL)
-    {
-        delete lItem->widget();
-        delete lItem;
+    while ((lItem = ui->layToolbar->takeAt(0)) != nullptr) {
+        if (QWidget *widget = lItem->widget()) {
+            widget->deleteLater(); // Or: delete widget; (without deleting lItem)
+        }
+        delete lItem; // Safe to delete layout item after widget parent cleanup
     }
-    // Then, loop through the help files list and create the new buttons
-    foreach(QStringList item, helpFiles) {
+
+    // 2. Add new buttons
+    for (const QStringList &item : helpFiles) {
+        if (item.size() < 2) continue;
+
+        qDebug() << "Adding help button:" << item[0];
         QPushButton *helpButton = new QPushButton(item[0]);
-        QObject::connect(helpButton, &QPushButton::clicked, [item]{
-            QString url = QString("file:///%1").arg(item[1]);
-            QDesktopServices::openUrl(QUrl(QString(url), QUrl::TolerantMode));
+        helpButton->setMinimumSize(helpButton->sizeHint());
+
+        QString filePath = item[1];
+        QObject::connect(helpButton, &QPushButton::clicked, this, [filePath]() {
+            QDesktopServices::openUrl(QUrl::fromLocalFile(filePath));
         });
-        qDebug() << item[0];
-        // Add the created button to the layout
+
         ui->layToolbar->addWidget(helpButton);
+        helpButton->show();
     }
-    // Finally, add a spacer to align buttons at left
+
+    // 3. Spacer to keep buttons aligned to the left
     ui->layToolbar->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Fixed));
+    // Force layout recalculation
+    ui->layToolbar->invalidate();
+    ui->layToolbar->activate();
+
+    if (QWidget *parent = ui->layToolbar->parentWidget()) {
+        parent->updateGeometry();
+        parent->adjustSize();
+        parent->update();
+    }
+    qDebug() << "Toolbar item count:" << ui->layToolbar->count();
+    if (ui->layToolbar->parentWidget()) {
+        qDebug() << "Parent widget visible:" << ui->layToolbar->parentWidget()->isVisible();
+        qDebug() << "Parent widget size:" << ui->layToolbar->parentWidget()->size();
+    }
 }
 
 //******************************************************************************
@@ -268,8 +300,6 @@ void MainWindow::slotDoOpenProject() {
         QString dirProject = dlg->getProjectPath();
         if (!dirProject.isEmpty()) {
             openProject(dlg->getProjectPath());
-            this->helpFiles = dlg->getHelpFiles();
-            setHelpFilesInToolbar(this->helpFiles);
         }
     }
 }
@@ -325,33 +355,41 @@ void MainWindow::openProject(QString projectPath) {
     QDir projectDir(projectPath);
     if (projectDir.exists()) {
         this->project = new Project(app, projectPath);
-        qDebug() << "PROJECT LANGUAGE : " << project->projectLanguage;
+        qDebug() << "PROJECT LANGUAGE : " << this->project->projectLanguage;
+        qDebug() << "PROJECT HELP : " << this->project->getHelpFiles();
+        if (this->project->getHelpFiles().isEmpty()) {
+            Languages *l = new Languages();
+            QList<QStringList> h = Project::getHelpFiles(app->appDir, l->guessLanguage(projectPath), "raw");
+            QList<QStringList> r;
+            foreach(QStringList item, h) {
+                item[1] = this->project->setVars(item[1],this->project->projectName);
+                r.append({item[0], item[1]});
+            }
+            this->project->setHelpFiles(r);
+        }
+        qDebug() << "PROJECT HELP : " << this->project->getHelpFiles();
+        setHelpFilesInToolbar(this->project->getHelpFiles());
+
         model->setRootPath(projectPath);
         ui->tvwProject->setRootIndex(model->index(projectPath));
         ui->toolBox->setCurrentIndex(TAB_EDIT);
         QFileInfo fi(projectPath);
         ui->toolBox->setTabText(TAB_PROJECT, QString("%1").arg(fi.fileName()));
+        ui->toolBox->tabBar()->setTabTextColor(0, QColor(app->appSettings->get("COLOR_ENHANCED").toString()));
         ui->btnArchiveProject->setEnabled(true);
         ui->btnCloseProject->setEnabled(true);
         ui->btnPropertiesProject->setEnabled(true);
+        ui->txtBuildCommand->setText(this->project->getBuildCommand(app->appDir));
+
+        bool inTerminal = false;
+        QString cmd = this->project->getRunCommand(app->appDir, inTerminal);
+        ui->txtRunCommand->setText(cmd);
+        ui->chkRunTerminal->setChecked(inTerminal);
+
         project->startSession();
         runningSession = true;
 
-        ui->lstProjectProperties->clear();
-        QMap<QString, QString> props = this->project->getProperties();
-        /*
-        QMapIterator<QString, QString> i(props);
-        while (i.hasNext()) {
-            i.next();
-            ui->lstProjectProperties->addItem(i.key() + " " + i.value());
-        }
-        */
-        ui->lstProjectProperties->addItem("Project " + props["Name"]);
-        ui->lstProjectProperties->addItem("Created " + Utils::tsToString(props["Created"], app->appSettings->get("DATETIME_FORMAT").toString()));
-        ui->lstProjectProperties->addItem("Modified " + Utils::tsToString(props["Modified"], app->appSettings->get("DATETIME_FORMAT").toString()));
-        ui->lstProjectProperties->addItem("Language " + props["Language"]);
-        ui->lstProjectProperties->addItem("Elapsed " + Utils::secondsToString(props["Elapsed"].toInt()));
-        ui->lstProjectProperties->addItem("Size " + Utils::formatSize(props["Size"].toInt()) + " (" + props["Size"] + " bytes)");
+        displayProjectProperties();
 
         git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
     } else {
@@ -387,7 +425,7 @@ void MainWindow::closeProject() {
         delete lItem;
     }
     // Clear the Project's properties panel
-    ui->lstProjectProperties->clear();
+    // ui->scaProjectProperties->clear();
 }
 
 //******************************************************************************
@@ -838,4 +876,393 @@ QScreen *MainWindow::getActiveScreen(
             pWidget = pWidget->parentWidget();
     }
     return pActive;
+}
+
+//******************************************************************************
+// displayProjectProperties()
+//******************************************************************************
+void MainWindow::displayProjectProperties() {
+    QMap<QString, QString> props = this->project->getProperties();
+
+    qDebug() << "Displaying project properties for " << props["Name"];
+
+    // Identify target container widget (handling QScrollArea vs QWidget)
+    QWidget *targetWidget = ui->scaProjectProperties;
+    if (auto *scrollArea = qobject_cast<QScrollArea*>(ui->scaProjectProperties)) {
+        if (!scrollArea->widget()) {
+            scrollArea->setWidget(new QWidget());
+            scrollArea->setWidgetResizable(true);
+        }
+        targetWidget = scrollArea->widget();
+    }
+
+    // Get existing layout or create a new one (DO NOT call targetWidget->setLayout(vbox) afterwards)
+    QVBoxLayout *vbox = qobject_cast<QVBoxLayout*>(targetWidget->layout());
+    if (!vbox) {
+        vbox = new QVBoxLayout(targetWidget); // Automatically sets layout on targetWidget
+    } else {
+        // Clear previous widgets and spacers safely
+        QLayoutItem *item;
+        while ((item = vbox->takeAt(0)) != nullptr) {
+            if (QWidget *w = item->widget()) {
+                w->deleteLater();
+            } else {
+                delete item;
+            }
+        }
+    }
+
+    // Populate layout
+    auto addProperty = [vbox](const QString &label, const QString &value) {
+        QLabel *lbl = new QLabel(label);
+        lbl->setStyleSheet("font-weight: bold;");
+        vbox->addWidget(lbl);
+
+        QLineEdit *txt = new QLineEdit(value);
+        txt->setReadOnly(true);
+        vbox->addWidget(txt);
+    };
+
+    GitTimeEstimator estimator;
+    qint64 totalSeconds = estimator.calculateElapsedTime(this->project->projectDir);
+    if (totalSeconds<=0) {
+        totalSeconds=props["Elapsed"].toInt();
+    }
+
+    addProperty("🢒 Project :", props["Name"]);
+    addProperty("🢒 Created :", Utils::tsToString(props["Created"], app->appSettings->get("DATETIME_FORMAT").toString()));
+    addProperty("🢒 Modified :", Utils::tsToString(props["Modified"], app->appSettings->get("DATETIME_FORMAT").toString()));
+    addProperty("🢒 Language :", props["Language"]);
+    addProperty("🢒 Estimated Elapsed Time :", Utils::secondsToString(totalSeconds));
+    addProperty("🢒 Size :", Utils::formatSize(props["Size"].toInt()) + " (" + props["Size"] + " bytes)");
+
+    vbox->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Fixed, QSizePolicy::Expanding));
+}
+
+//******************************************************************************
+// clearProjectProperties()
+//******************************************************************************
+void MainWindow::clearProjectProperties() {
+    QVBoxLayout *vbox = new QVBoxLayout(ui->scaProjectProperties);
+    QLabel *lbl01 = new QLabel("🢒 Project :");
+    lbl01->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl01);
+    QLineEdit *txt01 = new QLineEdit("*NONE");
+    txt01->setReadOnly(true);
+    vbox->addWidget(txt01);
+
+    QLabel *lbl02 = new QLabel("🢒 Created :");
+    lbl02->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl02);
+    QLineEdit *txt02 = new QLineEdit("*NONE");
+    txt02->setReadOnly(true);
+    vbox->addWidget(txt02);
+
+    QLabel *lbl03 = new QLabel("🢒 Modified :");
+    lbl03->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl03);
+    QLineEdit *txt03 = new QLineEdit("*NONE");
+    txt03->setReadOnly(true);
+    vbox->addWidget(txt03);
+
+    QLabel *lbl04 = new QLabel("🢒 Language :");
+    lbl04->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl04);
+    QLineEdit *txt04 = new QLineEdit("*NONE");
+    txt04->setReadOnly(true);
+    vbox->addWidget(txt04);
+
+    QLabel *lbl05 = new QLabel("🢒 Elapsed :");
+    lbl05->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl05);
+    QLineEdit *txt05 = new QLineEdit("*NONE");
+    txt05->setReadOnly(true);
+    vbox->addWidget(txt05);
+
+    QLabel *lbl06 = new QLabel("🢒 Size :");
+    lbl06->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl06);
+    QLineEdit *txt06 = new QLineEdit("*NONE");
+    txt06->setReadOnly(true);
+    vbox->addWidget(txt06);
+
+    vbox->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Expanding, QSizePolicy::Fixed));
+    ui->scaProjectProperties->setLayout(vbox);
+}
+
+//******************************************************************************
+// on_btnDoBuild_clicked()
+//******************************************************************************
+void MainWindow::on_btnDoBuild_clicked() {
+    QString commandStr = ui->txtBuildCommand->text().trimmed();
+
+    if (commandStr.isEmpty()) {
+        ui->txtBuildOutput->append("<b>[Error] No build command specified.</b>");
+        return;
+    }
+
+    ui->txtBuildOutput->clear();
+    ui->txtBuildOutput->append(QString("<b>> Executing: %1</b>\n").arg(commandStr));
+
+    if (buildProcess) {
+        buildProcess->kill();
+        buildProcess->deleteLater();
+        buildProcess = nullptr;
+    }
+
+    buildProcess = new QProcess(this);
+
+    // Set the working directory to the project's folder location
+    buildProcess->setWorkingDirectory(this->project->projectDir);
+    buildProcess->setProcessChannelMode(QProcess::MergedChannels);
+
+    connect(buildProcess, &QProcess::readyReadStandardOutput, this, &MainWindow::readBuildOutput);
+    connect(buildProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &MainWindow::buildFinished);
+
+    ui->btnDoBuild->setEnabled(false);
+
+#if defined(Q_OS_WIN)
+    buildProcess->start("cmd.exe", QStringList() << "/c" << commandStr);
+#else
+    buildProcess->start("/bin/sh", QStringList() << "-c" << commandStr);
+#endif
+}
+
+//******************************************************************************
+// readBuildOutput()
+//******************************************************************************
+void MainWindow::readBuildOutput() {
+    if (buildProcess) {
+        // Read available output and append it to the QTextEdit
+        QByteArray output = buildProcess->readAllStandardOutput();
+        ui->txtBuildOutput->append(QString::fromUtf8(output));
+    }
+}
+
+//******************************************************************************
+// buildFinished()
+//******************************************************************************
+void MainWindow::buildFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+    Q_UNUSED(exitStatus);
+
+    if (exitCode == 0) {
+        ui->txtBuildOutput->append("\n<b>=== BUILD SUCCESSFUL ===</b>");
+    } else {
+        ui->txtBuildOutput->append(QString("\n<b style='color:red;'>=== BUILD FAILED (Exit code: %1) ===</b>").arg(exitCode));
+    }
+
+    // Re-enable the build button
+    ui->btnDoBuild->setEnabled(true);
+}
+
+//******************************************************************************
+// on_btnDoRun_clicked()
+//******************************************************************************
+void MainWindow::on_btnDoRun_clicked() {
+    QString commandStr = ui->txtRunCommand->text().trimmed();
+
+    if (commandStr.isEmpty()) {
+        ui->txtRunOutput->append("<b>[Error] No run command specified.</b>");
+        return;
+    }
+
+    ui->txtRunOutput->clear();
+    ui->txtRunOutput->append(QString("<b>> Executing: %1</b>\n").arg(commandStr));
+
+    // Abort previous run instance if active
+    if (runProcess) {
+        runProcess->kill();
+        runProcess->deleteLater();
+        runProcess = nullptr;
+    }
+
+    runProcess = new QProcess(this);
+
+    // Set working directory to the project folder
+    runProcess->setWorkingDirectory(this->project->projectDir);
+
+    // Merge standard output and error channels
+    runProcess->setProcessChannelMode(QProcess::MergedChannels);
+
+    // Connect signals for asynchronous output and completion
+    connect(runProcess, &QProcess::readyReadStandardOutput, this, &MainWindow::readRunOutput);
+    connect(runProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &MainWindow::runFinished);
+
+    ui->btnDoRun->setEnabled(false);
+    ui->btnStopRun->setEnabled(true);
+    bool runInTerminal = ui->chkRunTerminal->isChecked();
+
+#if defined(Q_OS_WIN)
+    if (runInTerminal) {
+        ui->txtRunOutput->append(QString("<b>> Executing in external console: %1</b>\n").arg(commandStr));
+        // 'start' opens a separate Windows Command Prompt window
+        runProcess->start("cmd.exe", QStringList() << "/c" << "start" << "cmd.exe" << "/k" << commandStr);
+    } else {
+        txtRunOutput->append(QString("<b>> Executing: %1</b>\n").arg(commandStr));
+        runProcess->start("cmd.exe", QStringList() << "/c" << commandStr);
+    }
+#else
+    if (runInTerminal) {
+        ui->txtRunOutput->append(QString("<b>> Launching in external terminal: %1</b>\n").arg(commandStr));
+
+        // Check popular Linux terminal emulators in order of common availability
+        QString terminalApp;
+        if (QStandardPaths::findExecutable("x-terminal-emulator").length() > 0) {
+            terminalApp = "x-terminal-emulator";
+        } else if (QStandardPaths::findExecutable("gnome-terminal").length() > 0) {
+            terminalApp = "gnome-terminal";
+        } else if (QStandardPaths::findExecutable("konsole").length() > 0) {
+            terminalApp = "konsole";
+        } else if (QStandardPaths::findExecutable("xfce4-terminal").length() > 0) {
+            terminalApp = "xfce4-terminal";
+        } else {
+            terminalApp = "xterm";
+        }
+
+        if (terminalApp == "gnome-terminal") {
+            runProcess->start("gnome-terminal", QStringList() << "--" << "bash" << "-c" << commandStr + "; exec bash");
+        } else if (terminalApp == "konsole") {
+            runProcess->start("konsole", QStringList() << "-e" << "bash" << "-c" << commandStr + "; exec bash");
+        } else {
+            // Generic x-terminal-emulator / xfce4-terminal / xterm syntax (-e)
+            runProcess->start(terminalApp, QStringList() << "-e" << QString("bash -c '%1; exec bash'").arg(commandStr));
+        }
+    } else {
+        ui->txtRunOutput->append(QString("<b>> Executing: %1</b>\n").arg(commandStr));
+        runProcess->start("/bin/sh", QStringList() << "-c" << commandStr);
+    }
+#endif
+}
+
+//******************************************************************************
+// on_btnStopRun_clicked()
+//******************************************************************************
+void MainWindow::on_btnStopRun_clicked() {
+    if (runProcess && runProcess->state() != QProcess::NotRunning) {
+        ui->txtRunOutput->append("\n<b style='color:orange;'>=== ABORTING PROCESS... ===</b>");
+
+        // Try soft termination first (SIGTERM on Linux / WM_CLOSE on Windows)
+        runProcess->terminate();
+
+        // If process doesn't close within 1 second, force kill it (SIGKILL)
+        if (!runProcess->waitForFinished(1000)) {
+            runProcess->kill();
+        }
+    }
+}
+
+//******************************************************************************
+// readRunOutput()
+//******************************************************************************
+void MainWindow::readRunOutput() {
+    if (runProcess) {
+        QByteArray output = runProcess->readAllStandardOutput();
+        ui->txtRunOutput->append(QString::fromUtf8(output));
+    }
+}
+
+//******************************************************************************
+// runFinished()
+//******************************************************************************
+void MainWindow::runFinished(int exitCode, QProcess::ExitStatus exitStatus) {
+    Q_UNUSED(exitStatus);
+
+    if (exitCode == 0) {
+        ui->txtRunOutput->append("\n<b>=== PROCESS EXITED NORMAL (Code: 0) ===</b>");
+    } else {
+        ui->txtRunOutput->append(QString("\n<b style='color:red;'>=== PROCESS EXITED WITH ERROR (Code: %1) ===</b>").arg(exitCode));
+    }
+
+    ui->btnDoRun->setEnabled(true);
+    ui->btnStopRun->setEnabled(false);
+}
+
+//******************************************************************************
+// on_btnDoSaveBuild_clicked()
+//******************************************************************************
+void MainWindow::on_btnDoSaveBuild_clicked() {
+    if (!project || project->projectFile.isEmpty()) {
+        ui->txtBuildOutput->append("<b style='color:red;'>[Error] No active project loaded.</b>");
+        return;
+    }
+
+    QFile file(project->projectFile);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        file.close();
+        return;
+    }
+    file.close();
+
+    QDomElement root = doc.documentElement();
+    QDomElement buildNode = root.firstChildElement("build");
+    if (buildNode.isNull()) {
+        buildNode = doc.createElement("build");
+        root.appendChild(buildNode);
+    }
+
+    // Set the text using a QDomText child
+    setElementText(doc, buildNode, ui->txtBuildCommand->text().trimmed());
+
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QTextStream stream(&file);
+        doc.save(stream, 4);
+        file.close();
+        ui->txtBuildOutput->append("<b>[Info] Build command saved successfully.</b>");
+    }
+}
+
+//******************************************************************************
+// on_btnDoSaveRun_clicked()
+//******************************************************************************
+void MainWindow::on_btnDoSaveRun_clicked() {
+    if (!project || project->projectFile.isEmpty()) {
+        ui->txtRunOutput->append("<b style='color:red;'>[Error] No active project loaded.</b>");
+        return;
+    }
+
+    QFile file(project->projectFile);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
+
+    QDomDocument doc;
+    if (!doc.setContent(&file)) {
+        file.close();
+        return;
+    }
+    file.close();
+
+    QDomElement root = doc.documentElement();
+    QDomElement runNode = root.firstChildElement("run");
+    if (runNode.isNull()) {
+        runNode = doc.createElement("run");
+        root.appendChild(runNode);
+    }
+
+    // Set text node and attribute
+    setElementText(doc, runNode, ui->txtRunCommand->text().trimmed());
+    runNode.setAttribute("inTerminal", ui->chkRunTerminal->isChecked() ? "true" : "false");
+
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QTextStream stream(&file);
+        doc.save(stream, 4);
+        file.close();
+        ui->txtRunOutput->append("<b>[Info] Run command and terminal option saved successfully.</b>");
+    }
+}
+
+//******************************************************************************
+// setElementText()
+// Helper lambda or inline function to easily update element text in QDomDocument
+//******************************************************************************
+void setElementText(QDomDocument &doc, QDomElement &element, const QString &text) {
+    // Remove existing child text nodes if any
+    while (!element.firstChild().isNull()) {
+        element.removeChild(element.firstChild());
+    }
+    // Append the new text node
+    element.appendChild(doc.createTextNode(text));
 }

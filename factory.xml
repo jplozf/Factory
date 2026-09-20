@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <factory>
     <language tag="Python">
+        <build>python -m py_compile %PROJECT%.py</build>
+        <run>python %PROJECT%.py</run>
         <toolkits>
             <toolkit tag="Raw">
                 <files>
@@ -26,18 +28,21 @@
             <toolkit tag="Qt5">
             </toolkit>
             <toolkit tag="NCurses">
-            <files>
-                <file name="%PROJECT%.py" source=":/templates/python/ncurses/project.py"/>
-                <file name="README.md" source=":/templates/README.md"/>
-            </files>
-            <helpfiles>
-                <help tag="Python Help" source="%DOC_FOLDER%/python3110a6.chm"/>
-                <help tag="Python Core and Examples" source="%DOC_FOLDER%/Python-3.13.x-Core-Reference-and-Examples-v1.10.chm"/>
-            </helpfiles>
+                <files>
+                    <file name="%PROJECT%.py" source=":/templates/python/ncurses/project.py"/>
+                    <file name="README.md" source=":/templates/README.md"/>
+                </files>
+                <helpfiles>
+                    <help tag="Python Help" source="%DOC_FOLDER%/python3110a6.chm"/>
+                    <help tag="Python Core and Examples" source="%DOC_FOLDER%/Python-3.13.x-Core-Reference-and-Examples-v1.10.chm"/>
+                </helpfiles>
             </toolkit>
         </toolkits>
     </language>
+
     <language tag="C">
+        <build>gcc -Wall -o %PROJECT% %PROJECT%.c</build>
+        <run>./%PROJECT%</run>
         <toolkits>
             <toolkit tag="Raw">
                 <files>
@@ -59,7 +64,10 @@
             </toolkit>
         </toolkits>
     </language>
+
     <language tag="C++">
+        <build>g++ -Wall -std=c++17 -o %PROJECT% %PROJECT%.cpp myclass.cpp</build>
+        <run>./%PROJECT%</run>
         <toolkits>
             <toolkit tag="Raw">
                 <files>
@@ -74,7 +82,10 @@
             </toolkit>
         </toolkits>
     </language>
+
     <language tag="Rust">
+        <build>cargo build</build>
+        <run>cargo run</run>
         <toolkits>
             <toolkit tag="Raw">
                 <files>
@@ -87,8 +98,15 @@
             </toolkit>
         </toolkits>
     </language>
-    <language tag="Java"></language>
+
+    <language tag="Java">
+        <build>javac %PROJECT%.java</build>
+        <run>java %PROJECT%</run>
+    </language>
+
     <language tag="Go">
+        <build>go build -o %PROJECT% %PROJECT%.go</build>
+        <run>./%PROJECT%</run>
         <toolkits>
             <toolkit tag="Raw">
                 <files>
@@ -101,8 +119,24 @@
             </toolkit>
         </toolkits>
     </language>
-    <language tag="HTML"></language>
-    <language tag="XML"></language>
-    <language tag="CSS"></language>
-    <language tag="Markdown"></language>
+
+    <language tag="HTML">
+        <build></build>
+        <run>xdg-open %PROJECT%.html</run>
+    </language>
+
+    <language tag="XML">
+        <build></build>
+        <run>xmllint --noout %PROJECT%.xml</run>
+    </language>
+
+    <language tag="CSS">
+        <build></build>
+        <run></run>
+    </language>
+
+    <language tag="Markdown">
+        <build></build>
+        <run>glow %PROJECT%.md</run>
+    </language>
 </factory>

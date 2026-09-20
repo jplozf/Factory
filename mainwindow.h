@@ -86,6 +86,10 @@ private:
     const int TAB_SETTINGS = 5;
     QScreen *getActiveScreen(QWidget *pWidget) const;
     bool IsVisible;
+    void clearProjectProperties();
+    void displayProjectProperties();
+    QProcess *buildProcess = nullptr;
+    QProcess *runProcess = nullptr;
 
 private slots:
     void slotDoEdit();
@@ -119,5 +123,18 @@ private slots:
     void slotDoubleClickedProject(QModelIndex idx);
     void slotMenuContextProject(QPoint p);
 
+    void on_btnDoBuild_clicked();
+    void readBuildOutput();
+    void buildFinished(int exitCode, QProcess::ExitStatus exitStatus);
+
+    void on_btnDoRun_clicked();
+    void on_btnStopRun_clicked();
+    void readRunOutput();
+    void runFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void on_btnDoSaveBuild_clicked();
+    void on_btnDoSaveRun_clicked();
 };
+
+void setElementText(QDomDocument &doc, QDomElement &element, const QString &text);
+
 #endif // MAINWINDOW_H
