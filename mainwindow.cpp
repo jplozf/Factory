@@ -84,6 +84,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
                              .arg(GIT_COMMIT_COUNT)
                              .arg(GIT_HASH));
     clearProjectProperties();
+    git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
+
+    // Retrieve branch and commit hash and update the label
+    QString branch = git->getCurrentBranch();
+    QString shortHash = git->getShortHash();
+
+    if (!branch.isEmpty()) {
+        ui->lblGitInfo->setText(QString("Branch: <b>%1</b> | Commit: <code><b>%2</b></code>").arg(branch, shortHash));
+    } else {
+        ui->lblGitInfo->setText("Not a Git repository");
+    }
 }
 
 //******************************************************************************
@@ -425,6 +436,7 @@ void MainWindow::closeProject() {
     }
     // Clear the Project's properties panel
     // ui->scaProjectProperties->clear();
+    ui->lblGitInfo->clear();
 }
 
 //******************************************************************************

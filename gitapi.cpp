@@ -6,6 +6,8 @@
 GitAPI::GitAPI(QString gitBin, Ui::MainWindow *ui) {
     this->gitBin = gitBin;
     this->ui = ui;
+    this->ui->cbxGitCommands->clear();
+    this->commands.clear();
     this->commands.append(QStringList{"version", "--version"});
     this->commands.append(QStringList{"status", "status"});
     this->commands.append(QStringList{"clone", "clone", "%REMOTE_GIT%"});
@@ -13,6 +15,8 @@ GitAPI::GitAPI(QString gitBin, Ui::MainWindow *ui) {
     this->commands.append(QStringList{"add <FILES or DIRECTORIES>", "add", "%FILES_DIRECTORIES%"});
     this->commands.append(QStringList{"add .", "add", "."});
     this->commands.append(QStringList{"commit", "commit", "-m", "%TEXT%"});
+    this->commands.append(QStringList{"push", "push"});
+    this->commands.append(QStringList{"log", "log"});
 
     foreach(QStringList cmd, this->commands) {
         ui->cbxGitCommands->addItem(cmd[0], QVariant(cmd));
@@ -103,27 +107,41 @@ void GitAPI::slotDoChangeCommandIndex(int i) {
 // slotDoXeq()
 //******************************************************************************
 void GitAPI::slotDoXeq() {
-    /*
-    git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
-    GitAPI::xeqResult gxr = git->xeq(QStringList("status"));
-    ui->txtGitOutput->setText(gxr.out);
-    ui->toolBox->setCurrentIndex(TAB_GIT);
-    qDebug() << gxr.out;
-    qDebug() << gxr.err;
-    qDebug() << gxr.rc;
-    */
-    // TODO : check in command if %KEYWORD% and replace it with cbxGitParams.text
+    // Check in command if %KEYWORD% and replace it with cbxGitParams.text
+    QStringList xCmd;
     foreach(QString p, this->command) {
-        if (p[0] == "%") {
-
+        if (p.startsWith('%') && p.endsWith('%')) {
+            p = ui->cbxGitParams->currentText();
+            if (p.contains(' ')) {
+                p = "\"" + p + "\"";
+            }
         }
+        xCmd.append(p);
     }
 
-    GitAPI::xeqResult gxr = xeq(this->command);
-    ui->txtGitOutput->append("> git " + this->command.join(" "));
+    GitAPI::xeqResult gxr = xeq(xCmd);
+    ui->txtGitOutput->append("> git " + xCmd.join(" "));
     ui->txtGitOutput->append(gxr.out);
 }
 
-void GitAPI::on_btnPin_clicked() {}
+//******************************************************************************
+// getCurrentBranch()
+//******************************************************************************
+QString GitAPI::getCurrentBranch() {
+    QProcess process;
+    process.setWorkingDirectory(this->rootFolder);
+    process.start("git", QStringList() << "rev-parse" << "--abbrev-ref" << "HEAD");
+    process.waitForFinished();
+    return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+}
 
-void GitAPI::on_btnTerm_clicked() {}
+//******************************************************************************
+// getShortHash()
+//******************************************************************************
+QString GitAPI::getShortHash() {
+    QProcess process;
+    process.setWorkingDirectory(this->rootFolder);
+    process.start("git", QStringList() << "rev-parse" << "--short" << "HEAD");
+    process.waitForFinished();
+    return QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+}
