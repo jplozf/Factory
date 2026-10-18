@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <factory>
     <language tag="Python">
-        <build>python -m py_compile %PROJECT%.py</build>
-        <run>python %PROJECT%.py</run>
+        <build>python3 -m py_compile %PROJECT%.py</build>
+        <run>python3 %PROJECT%.py</run>
         <toolkits>
             <toolkit tag="Raw">
                 <files>

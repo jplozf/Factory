@@ -53,6 +53,12 @@ public:
     QString getBuildCommand(QString appDir);
     QString getRunCommand(QString appDir, bool &inTerminal);
 
+    struct ToolItem {
+        QString name;
+        QString command;
+    };
+    QList<ToolItem> getGlobalTools(QString appDir);
+
 private:
     App *app;
 };

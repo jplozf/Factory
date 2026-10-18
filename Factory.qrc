@@ -213,5 +213,6 @@
         <file>templates/rust/raw/project.rs</file>
         <file>templates/README.md</file>
         <file>templates/PROJECT.frx</file>
+        <file>templates/go/raw/main.go</file>
     </qresource>
 </RCC>

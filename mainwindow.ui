@@ -145,7 +145,7 @@
     <item row="3" column="0">
      <widget class="QTabWidget" name="toolBox">
       <property name="currentIndex">
-       <number>2</number>
+       <number>4</number>
       </property>
       <property name="usesScrollButtons">
        <bool>false</bool>
@@ -196,23 +196,6 @@
             <property name="icon">
              <iconset resource="Factory.qrc">
               <normaloff>:/icons/icons/Folder.png</normaloff>:/icons/icons/Folder.png</iconset>
-            </property>
-            <property name="flat">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="btnPropertiesProject">
-            <property name="toolTip">
-             <string>Properties of this project</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset resource="Factory.qrc">
-              <normaloff>:/icons/icons/Gear.png</normaloff>:/icons/icons/Gear.png</iconset>
             </property>
             <property name="flat">
              <bool>true</bool>
@@ -467,7 +450,7 @@
             </property>
             <property name="icon">
              <iconset resource="Factory.qrc">
-              <normaloff>:/icons/icons/Trash.png</normaloff>:/icons/icons/Trash.png</iconset>
+              <normaloff>:/icons/icons/Recycle.png</normaloff>:/icons/icons/Recycle.png</iconset>
             </property>
             <property name="flat">
              <bool>true</bool>

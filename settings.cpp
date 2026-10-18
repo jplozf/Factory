@@ -91,7 +91,8 @@ void Settings::form(QWidget *w) {
     QVBoxLayout *vbox = new QVBoxLayout(w);
     for(auto e : settings.keys())
     {
-        QLabel *lblSetting = new QLabel("🢒 " + e + " :");
+        // QLabel *lblSetting = new QLabel("🢒 " + e + " :");
+        QLabel *lblSetting = new QLabel(e);
         lblSetting->setStyleSheet("font-weight: bold;");
         vbox->addWidget(lblSetting);
 
@@ -121,7 +122,6 @@ void Settings::form(QWidget *w) {
 // handleTextChanged()
 //******************************************************************************
 void Settings::handleTextChanged(QLabel *lbl, QLineEdit *txt) {
-    // qDebug(lbl->text().toLatin1());
-    settings[lbl->text().toLatin1()] = QVariant(txt->text().toLatin1());
+    settings[lbl->text()] = QVariant(txt->text().toLatin1());
     write();
 }

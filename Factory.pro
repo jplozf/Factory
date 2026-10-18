@@ -57,6 +57,9 @@ RESOURCES += \
     Factory.qrc
 
 DISTFILES += \
+    README.md \
+    TODO \
+    commit_message.txt \
     docs/index.txt \
     factory.xml \
     licenses/apache-v2.0.md \

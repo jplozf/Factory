@@ -19,7 +19,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     setStyleSheet("#borderlessMainWindow{border:1px solid palette(highlight);}");
 
     connect(ui->btnOpenProject, SIGNAL(clicked()), this, SLOT(slotDoOpenProject()));
-    connect(ui->btnPropertiesProject, SIGNAL(clicked()), this, SLOT(slotDoPropertiesProject()));
     connect(ui->btnArchiveProject, SIGNAL(clicked()), this, SLOT(slotDoArchiveProject()));
     connect(ui->btnCloseProject, SIGNAL(clicked()), this, SLOT(slotDoCloseProject()));
 
@@ -48,7 +47,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
 
     ui->btnArchiveProject->setEnabled(false);
     ui->btnCloseProject->setEnabled(false);
-    ui->btnPropertiesProject->setEnabled(false);
 
     connect(ui->btnExit, SIGNAL(clicked()), this, SLOT(slotDoExit()));
     connect(ui->action_Exit, SIGNAL(triggered()), this, SLOT(slotDoExit()));
@@ -64,7 +62,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     ui->btnArchiveProject->setToolTip("Archive this project");
     ui->btnCloseProject->setToolTip("Close this project");
     ui->btnOpenProject->setToolTip("Manage projects");
-    ui->btnPropertiesProject->setToolTip("Properties of this project");
     ui->btnBrowser->setToolTip("Open the browser");
     ui->btnBuild->setToolTip("Build");
     ui->btnEdit->setToolTip("Open the editor");
@@ -235,8 +232,10 @@ void MainWindow::readSettings() {
     const QString lastProject = registry.value("lastProject", QString()).toString();
     if (!lastProject.isEmpty()) {
         openProject(lastProject);
-        this->helpFiles = project->getHelpFiles();
-        setHelpFilesInToolbar(this->helpFiles);
+        if (project!=nullptr) {
+            this->helpFiles = project->getHelpFiles();
+            setHelpFilesInToolbar(this->helpFiles);
+        }
     } else {
         closeProject();
     }
@@ -313,7 +312,7 @@ void MainWindow::slotDoPropertiesProject() {
         qint64 size = Utils::dirSize(projectPath);
         qDebug() << size;
         QMessageBox msgBox;
-        msgBox.setText(QString("%1\n%2 bytes\n%3").arg(projectPath,QString::number(size),Utils::formatSize(size)));
+        msgBox.setText(QString("Path : %1\nSize : %2 bytes\nSize : %3\nBuild : %4\nRun : %5").arg(projectPath,QString::number(size),Utils::formatSize(size),ui->txtBuildCommand->text(), ui->txtRunCommand->text()));
         msgBox.exec();
     }
 }
@@ -379,7 +378,6 @@ void MainWindow::openProject(QString projectPath) {
         ui->toolBox->tabBar()->setTabTextColor(0, QColor(app->appSettings->get("COLOR_ENHANCED").toString()));
         ui->btnArchiveProject->setEnabled(true);
         ui->btnCloseProject->setEnabled(true);
-        ui->btnPropertiesProject->setEnabled(true);
         ui->txtBuildCommand->setText(this->project->getBuildCommand(app->appDir));
 
         bool inTerminal = false;
@@ -393,6 +391,7 @@ void MainWindow::openProject(QString projectPath) {
         displayProjectProperties();
 
         git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
+        saveSettings();
     } else {
         closeProject();
     }
@@ -410,7 +409,6 @@ void MainWindow::closeProject() {
 
     ui->btnArchiveProject->setEnabled(false);
     ui->btnCloseProject->setEnabled(false);
-    ui->btnPropertiesProject->setEnabled(false);
 
     if (this->project != NULL) {
         this->project->endSession();
@@ -637,6 +635,27 @@ void MainWindow::slotMenuContextProject(QPoint p) {
         propertiesFileAction.setProperty("file", model->filePath(idx));
         connect(&propertiesFileAction, SIGNAL(triggered()), this, SLOT(slotDoPropertiesFile()));
         menu.addAction(&propertiesFileAction);
+
+        // menu.addSeparator();
+
+        // Create "Tools" sub-menu using global definitions
+        QMenu *toolsSubMenu = menu.addMenu("Tools");
+
+        // Fetch global tools using app->appDir
+        QList<Project::ToolItem> globalTools = this->project->getGlobalTools(app->appDir);
+
+        if (globalTools.isEmpty()) {
+            QAction *noAction = toolsSubMenu->addAction("No tools configured");
+            noAction->setEnabled(false);
+        } else {
+            for (const Project::ToolItem &tool : globalTools) {
+                QAction *action = toolsSubMenu->addAction(tool.name);
+
+                connect(action, &QAction::triggered, this, [=]() {
+                    executeCustomTool(tool.command, model->filePath(idx));
+                });
+            }
+        }
 
         menu.exec(ui->tvwProject->viewport()->mapToGlobal(p));
     }
@@ -968,7 +987,8 @@ void MainWindow::displayProjectProperties() {
     addProperty("🢒 Language :", props["Language"]);
     addProperty("🢒 Estimated Elapsed Time :", Utils::secondsToString(totalSeconds));
     addProperty("🢒 Size :", Utils::formatSize(props["Size"].toInt()) + " (" + props["Size"] + " bytes)");
-
+    addProperty("🢒 Build command :", ui->txtBuildCommand->text());
+    addProperty("🢒 Run command :", ui->txtRunCommand->text());
     vbox->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Fixed, QSizePolicy::Expanding));
 }
 
@@ -1298,4 +1318,60 @@ void setElementText(QDomDocument &doc, QDomElement &element, const QString &text
     }
     // Append the new text node
     element.appendChild(doc.createTextNode(text));
+}
+
+//******************************************************************************
+// executeCustomTool()
+//******************************************************************************
+void MainWindow::executeCustomTool(QString commandTemplate, const QString &filePath) {
+    // 1. Replace file-level placeholders
+    QString finalCommand = commandTemplate;
+    finalCommand.replace("%FILE%", QString("\"%1\"").arg(filePath));
+    finalCommand.replace("%FILE_NAME%", QFileInfo(filePath).fileName());
+    finalCommand.replace("%FILE_FOLDER%", QFileInfo(filePath).dir().absolutePath());
+
+    // 2. Also apply global project variables (%PROJECT%, %DOC_FOLDER%, etc.) if a project is open
+    if (this->project) {
+        finalCommand = this->project->setVars(finalCommand, this->project->projectName);
+    }
+
+    qDebug() << "Executing custom tool:" << finalCommand;
+
+    // 3. Create and configure the QProcess instance
+    QProcess *toolProcess = new QProcess(this);
+
+    // Set working directory to the project folder (or fall back to the file's directory)
+    QString workingDir;
+    if (this->project && !this->project->projectFile.isEmpty()) {
+        workingDir = QFileInfo(this->project->projectFile).absolutePath();
+    } else {
+        workingDir = QFileInfo(filePath).absolutePath();
+    }
+    toolProcess->setWorkingDirectory(workingDir);
+
+    // Merge standard output and error so everything logs together
+    toolProcess->setProcessChannelMode(QProcess::MergedChannels);
+
+    // Connect output reading (you can route this to a dedicated output console or debug log)
+    connect(toolProcess, &QProcess::readyReadStandardOutput, this, [=]() {
+        QByteArray output = toolProcess->readAllStandardOutput();
+        qDebug().noquote() << output;
+        // Optional: If you have a log window, append it there:
+        // txtBuildOutput->append(QString::fromUtf8(output));
+    });
+
+    // Clean up process memory when finished
+    connect(toolProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, [=](int exitCode, QProcess::ExitStatus exitStatus) {
+                Q_UNUSED(exitStatus);
+                qDebug() << "Custom tool finished with exit code:" << exitCode;
+                toolProcess->deleteLater();
+            });
+
+    // 4. Start the command using the system shell
+#if defined(Q_OS_WIN)
+    toolProcess->start("cmd.exe", QStringList() << "/c" << finalCommand);
+#else
+    toolProcess->start("/bin/sh", QStringList() << "-c" << finalCommand);
+#endif
 }

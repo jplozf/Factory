@@ -4,6 +4,44 @@ QXmlStreamReader Project::xml;
 QFile Project::FactoryFile;
 
 //******************************************************************************
+// getGlobalTools()
+//******************************************************************************
+QList<Project::ToolItem> Project::getGlobalTools(QString appDir) {
+    QList<ToolItem> tools;
+    QString factoryPath = appDir + "/factory.xml";
+    QFile file(factoryPath);
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qDebug() << "Failed to open factory.xml at:" << factoryPath;
+        return tools;
+    }
+
+    QDomDocument doc;
+    if (doc.setContent(&file)) {
+        QDomElement root = doc.documentElement(); // <factory>
+
+        // Find the global <tools> element directly under <factory>
+        QDomElement toolsElem = root.firstChildElement("tools");
+        if (!toolsElem.isNull()) {
+            QDomNodeList toolNodes = toolsElem.elementsByTagName("tool");
+
+            for (int i = 0; i < toolNodes.count(); ++i) {
+                QDomElement toolElem = toolNodes.at(i).toElement();
+                ToolItem item;
+                item.name = toolElem.attribute("tag");
+                item.command = toolElem.attribute("command");
+
+                if (!item.name.isEmpty() && !item.command.isEmpty()) {
+                    tools.append(item);
+                }
+            }
+        }
+    }
+    file.close();
+    return tools;
+}
+
+//******************************************************************************
 // getLanguages()
 //******************************************************************************
 QList<QString> Project::getLanguages(QString appDir) {
@@ -382,7 +420,9 @@ void Project::endSession() {
 // getHelpFilesFromFRX => if null, getHelpFiles from factory.xml and set them into the FRX file
 //******************************************************************************
 QList<QStringList> Project::getHelpFiles() {
+
     QList<QStringList> r;
+
     QList<QStringList> h = getHelpFilesFromFRX();
     if (h.empty()) {
         // getHelpFiles from factory.xml
@@ -409,8 +449,9 @@ QList<QStringList> Project::getHelpFilesFromFRX() {
     QString tag;
     QString source;
     QFile FRXFile;
-    qDebug() << "The Project File : " << projectFile;
-    FRXFile.setFileName(projectFile);
+
+    qDebug() << "The Project File : " << this->projectFile;
+    FRXFile.setFileName(this->projectFile);
     if (!FRXFile.open(QFile::ReadOnly | QFile::Text)) {
         qDebug() << "Error loading XML file.";
     }

@@ -90,6 +90,7 @@ private:
     void displayProjectProperties();
     QProcess *buildProcess = nullptr;
     QProcess *runProcess = nullptr;
+    void executeCustomTool(QString commandTemplate, const QString &filePath);
 
 private slots:
     void slotDoEdit();
