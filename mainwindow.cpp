@@ -994,6 +994,7 @@ void MainWindow::displayProjectProperties() {
     }
 
     addProperty("🢒 Project :", props["Name"]);
+    addProperty("🢒 Path :", this->projectPath);
     addProperty("🢒 Branch :", this->git->getCurrentBranch());
     addProperty("🢒 Commit :", this->git->getShortHash());
     addProperty("🢒 Created :", Utils::tsToString(props["Created"], app->appSettings->get("DATETIME_FORMAT").toString()));
@@ -1017,6 +1018,13 @@ void MainWindow::clearProjectProperties() {
     QLineEdit *txt01 = new QLineEdit("*NONE");
     txt01->setReadOnly(true);
     vbox->addWidget(txt01);
+
+    QLabel *lbl01q = new QLabel("🢒 Path :");
+    lbl01q->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl01q);
+    QLineEdit *txt01q = new QLineEdit("*NONE");
+    txt01q->setReadOnly(true);
+    vbox->addWidget(txt01q);
 
     QLabel *lbl01b = new QLabel("🢒 Branch :");
     lbl01b->setStyleSheet("font-weight: bold;");
