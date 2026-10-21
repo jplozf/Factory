@@ -399,9 +399,9 @@ void MainWindow::openProject(QString projectPath) {
         project->startSession();
         runningSession = true;
 
+        git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
         displayProjectProperties();
 
-        git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
         saveSettings();
     } else {
         closeProject();
@@ -994,6 +994,8 @@ void MainWindow::displayProjectProperties() {
     }
 
     addProperty("🢒 Project :", props["Name"]);
+    addProperty("🢒 Branch :", this->git->getCurrentBranch());
+    addProperty("🢒 Commit :", this->git->getShortHash());
     addProperty("🢒 Created :", Utils::tsToString(props["Created"], app->appSettings->get("DATETIME_FORMAT").toString()));
     addProperty("🢒 Modified :", Utils::tsToString(props["Modified"], app->appSettings->get("DATETIME_FORMAT").toString()));
     addProperty("🢒 Language :", props["Language"]);
@@ -1015,6 +1017,20 @@ void MainWindow::clearProjectProperties() {
     QLineEdit *txt01 = new QLineEdit("*NONE");
     txt01->setReadOnly(true);
     vbox->addWidget(txt01);
+
+    QLabel *lbl01b = new QLabel("🢒 Branch :");
+    lbl01b->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl01b);
+    QLineEdit *txt01b = new QLineEdit("*NONE");
+    txt01b->setReadOnly(true);
+    vbox->addWidget(txt01b);
+
+    QLabel *lbl01t = new QLabel("🢒 Commit :");
+    lbl01t->setStyleSheet("font-weight: bold;");
+    vbox->addWidget(lbl01t);
+    QLineEdit *txt01t = new QLineEdit("*NONE");
+    txt01t->setReadOnly(true);
+    vbox->addWidget(txt01t);
 
     QLabel *lbl02 = new QLabel("🢒 Created :");
     lbl02->setStyleSheet("font-weight: bold;");
