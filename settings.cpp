@@ -109,10 +109,12 @@ void Settings::form(QWidget *w) {
     QLabel *lblTemplatesCustomizing = new QLabel("Customizing");
     btnTemplatesCutomizing = new QPushButton("...");
     form->addRow(lblTemplatesCustomizing, btnTemplatesCutomizing);
+    QLabel *lblTemplatesFolder = new QLabel("Open Folder");
+    btnTemplatesFolder = new QPushButton("...");
+    form->addRow(lblTemplatesFolder, btnTemplatesFolder);
     QLabel *lblTemplatesReset = new QLabel("Reset");
     btnTemplatesReset = new QPushButton("...");
     form->addRow(lblTemplatesReset, btnTemplatesReset);
-    // TODO : Add "Reset Templates Customizing" option
 
     vbox->addLayout(form);
     w->setLayout(vbox);

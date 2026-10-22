@@ -102,6 +102,7 @@ private slots:
     void slotDoExit();
     void slotDoPin();
     void slotDoTemplatesCutomizing();
+    void slotDoTemplatesFolder();
     void slotDoTemplatesReset();
 
     void slotDoNewItem();

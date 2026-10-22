@@ -56,6 +56,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     readSettings();
     app->appSettings->form(ui->scaSettings);
     connect(app->appSettings->btnTemplatesCutomizing, SIGNAL(clicked()), this, SLOT(slotDoTemplatesCutomizing()));
+    connect(app->appSettings->btnTemplatesFolder, SIGNAL(clicked()), this, SLOT(slotDoTemplatesFolder()));
     connect(app->appSettings->btnTemplatesReset, SIGNAL(clicked()), this, SLOT(slotDoTemplatesReset()));
     app->mruProjects = this->mruProjects;
 
@@ -798,6 +799,19 @@ void MainWindow::slotDoPropertiesFile() {
 //******************************************************************************
 void MainWindow::slotDoTemplatesCutomizing() {
     launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString(), {app->appDir + QDir::separator() + app->appConstants->getQString("TEMPLATES_FILE")});
+}
+
+//******************************************************************************
+// slotDoTemplatesFolder()
+//******************************************************************************
+void MainWindow::slotDoTemplatesFolder() {
+    QString f = app->appDir + QDir::separator() + "templates";
+#ifdef Q_OS_LINUX
+    QString url = QString("file://%1").arg(f);
+#else
+    QString url = QString("file:///%1").arg(f);
+#endif
+    QDesktopServices::openUrl(QUrl(QString(url), QUrl::TolerantMode));
 }
 
 //******************************************************************************
