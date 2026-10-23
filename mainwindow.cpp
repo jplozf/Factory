@@ -444,7 +444,7 @@ void MainWindow::closeProject() {
 // slotDoEdit()
 //******************************************************************************
 void MainWindow::slotDoEdit() {
-    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString());
+    launchProgram(app->appSettings->get("DEFAULT_EDITOR").toString(),{app->appSettings->get("DEFAULT_FILE_NAME").toString()});
 }
 
 //******************************************************************************
@@ -515,7 +515,7 @@ void MainWindow::slotDoBuild() {
 // slotDoBrowser()
 //******************************************************************************
 void MainWindow::slotDoBrowser() {
-    launchProgram(app->appSettings->get("DEFAULT_BROWSER").toString());
+    launchProgram(app->appSettings->get("DEFAULT_BROWSER").toString(),{app->appSettings->get("DEFAULT_WEB_URL").toString()});
 }
 
 //******************************************************************************

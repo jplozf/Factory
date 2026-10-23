@@ -12,6 +12,8 @@ Settings::Settings()
     defaults["DEFAULT_BROWSER"] = QVariant("/usr/bin/google-chrome-stable");
     defaults["GIT_BINARY_PATH"] = QVariant("/usr/bin/git");
     defaults["DEFAULT_REPOSITORY"] = QVariant("~/Projets/");
+    defaults["DEFAULT_FILE_NAME"] = QVariant("noname.txt");
+    defaults["DEFAULT_WEB_URL"] = QVariant("www.google.com");
 #else
     defaults["DEFAULT_EDITOR"] = QVariant("C:/Program Files/PSPad editor/PSPad.exe");
     defaults["DEFAULT_TERMINAL"] = QVariant("C:/Program Files (x86)/Mobatek/MobaXterm/MobaXterm.exe");
