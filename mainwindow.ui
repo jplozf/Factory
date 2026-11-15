@@ -114,6 +114,17 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="btnRun">
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="Factory.qrc">
+          <normaloff>:/icons/icons/Player Play.png</normaloff>:/icons/icons/Player Play.png</iconset>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
@@ -145,7 +156,7 @@
     <item row="3" column="0">
      <widget class="QTabWidget" name="toolBox">
       <property name="currentIndex">
-       <number>4</number>
+       <number>3</number>
       </property>
       <property name="usesScrollButtons">
        <bool>false</bool>

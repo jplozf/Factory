@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
     connect(ui->btnEdit, SIGNAL(clicked()), this, SLOT(slotDoEdit()));
     connect(ui->btnBrowser, SIGNAL(clicked()), this, SLOT(slotDoBrowser()));
     connect(ui->btnBuild, SIGNAL(clicked()), this, SLOT(slotDoBuild()));
+    connect(ui->btnRun, SIGNAL(clicked()), this, SLOT(slotDoRun()));
     connect(ui->btnSettings, SIGNAL(clicked()), this, SLOT(slotDoSettings()));
     connect(ui->btnTerm, SIGNAL(clicked()), this, SLOT(slotDoTerm()));      
 
@@ -484,8 +485,99 @@ void MainWindow::slotDoLaunchFile() {
 //******************************************************************************
 void MainWindow::slotDoLaunchTerminal() {
     QAction *action = qobject_cast<QAction *>(sender());
+    if (!action) return;
+
     QString f = action->property("file").toString();
-    // launchProgram(appSettings->get("DEFAULT_TERMINAL").toString() + " cd " + f);
+    QFileInfo fi(f);
+    QString dirPath = fi.absolutePath();
+    QString fileName = fi.fileName();
+
+    // Check if it's a Python script
+    bool isPython = (fi.suffix().compare("py", Qt::CaseInsensitive) == 0);
+
+    // Create a custom dialog for input + live command preview
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Launch in Terminal"));
+    dlg.setMinimumWidth(450);
+
+    QVBoxLayout *layout = new QVBoxLayout(&dlg);
+
+    QLabel *lblPrompt = new QLabel(tr("Enter command-line arguments for <b>%1</b>:").arg(fileName), &dlg);
+    layout->addWidget(lblPrompt);
+
+    QLineEdit *txtArgs = new QLineEdit(&dlg);
+    txtArgs->setPlaceholderText(tr("e.g. --input data.txt"));
+    layout->addWidget(txtArgs);
+
+    // Live preview label
+    QLabel *lblPreview = new QLabel(&dlg);
+    lblPreview->setStyleSheet("color: palette(text); font-family: monospace; background: palette(base); padding: 8px; border: 1px solid palette(mid); border-radius: 4px;");
+    layout->addWidget(lblPreview);
+
+    // Lambda to dynamically update the preview as the user types
+    auto updatePreview = [=](const QString &args) {
+        if (isPython) {
+            lblPreview->setText(QString("<b>Command:</b> python3 ./%1 %2").arg(fileName, args));
+        } else {
+            lblPreview->setText(QString("<b>Command:</b> ./%1 %2").arg(fileName, args));
+        }
+    };
+
+    updatePreview(""); // Initialize preview with empty arguments
+    connect(txtArgs, &QLineEdit::textChanged, this, updatePreview);
+
+    // Dialog buttons (OK / Cancel)
+    QDialogButtonBox *btnBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    layout->addWidget(btnBox);
+
+    connect(btnBox, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btnBox, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+    // Show dialog modally; exit if user cancels
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QString arguments = txtArgs->text();
+    QString terminal = app->appSettings->get("DEFAULT_TERMINAL").toString();
+
+    // Generate the temporary execution script in /tmp
+    QString tempScriptPath = QDir::tempPath() + "/factory_launch_" +
+                             QString::number(QCoreApplication::applicationPid()) + "_" +
+                             QString::number(QRandomGenerator::global()->bounded(10000)) + ".sh";
+
+    QFile scriptFile(tempScriptPath);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        out << "#!/bin/bash\n";
+        out << "cd \"" << dirPath << "\"\n";
+
+        // Execute with python3 if it's a .py file, otherwise run directly
+        if (isPython) {
+            out << "python3 ./" << fileName << " " << arguments << "\n";
+        } else {
+            out << "./\"" << fileName << "\" " << arguments << "\n";
+        }
+
+        // Keep terminal open to inspect output
+        out << "echo \"\"\n";
+        out << "echo \"Press Enter to close...\"\n";
+        out << "read\n";
+        scriptFile.close();
+
+        // Make executable and launch terminal
+        scriptFile.setPermissions(QFileDevice::ExeUser | QFileDevice::ReadUser | QFileDevice::WriteUser);
+
+        QStringList args;
+        if (terminal.contains("gnome-terminal", Qt::CaseInsensitive) ||
+            terminal.contains("xfce4-terminal", Qt::CaseInsensitive)) {
+            args << "--" << tempScriptPath;
+        } else {
+            args << tempScriptPath;
+        }
+
+        QProcess::startDetached(terminal, args);
+    }
 }
 
 //******************************************************************************
@@ -508,7 +600,16 @@ void MainWindow::slotDoTerm() {
 // slotDoBuild()
 //******************************************************************************
 void MainWindow::slotDoBuild() {
-    // launchProgram("tabby");
+    on_btnDoBuild_clicked();
+    ui->toolBox->setCurrentIndex(TAB_BUILD);
+}
+
+//******************************************************************************
+// slotDoRun()
+//******************************************************************************
+void MainWindow::slotDoRun() {
+    on_btnDoRun_clicked();
+    ui->toolBox->setCurrentIndex(TAB_RUN);
 }
 
 //******************************************************************************
@@ -690,24 +791,41 @@ void MainWindow::slotDoOpenTerminal() {
     QAction *action = qobject_cast<QAction *>(sender());
     QString f = action->property("file").toString();
     QFileInfo fi(f);
-    QString fn = fi.absolutePath();
-    qDebug() << fn;
+    QString fn = fi.absolutePath(); // Target directory path
 
-    QProcess mProcess;
-    mProcess.startDetached("/usr/bin/bash", QStringList() << "-c" << "cd " + fn);
-    mProcess.waitForFinished();
-    /*
-    // mProcess.setReadChannelMode(QProcess::SeparateChannels);
-    // mProcess.setProcessChannelMode(QProcess::MergedChannels);
-    // mProcess.readAllStandardOutput();
-    mProcess.startDetached(appSettings->get("DEFAULT_TERMINAL").toString());
-    if(mProcess.waitForStarted(-1)) {
-        // QString cmd = "cd " + fn + "\n";
-        // mProcess.write(cmd.toLatin1());
-        mProcess.write("cd /home/jpl/snap\n");
-        // mProcess.closeWriteChannel();
-     }
-     */
+    QString terminal = app->appSettings->get("DEFAULT_TERMINAL").toString();
+
+    // Generate a unique temporary script path in /tmp
+    QString tempScriptPath = QDir::tempPath() + "/factory_term_" +
+                             QString::number(QCoreApplication::applicationPid()) + "_" +
+                             QString::number(QRandomGenerator::global()->bounded(10000)) + ".sh";
+
+    QFile scriptFile(tempScriptPath);
+    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&scriptFile);
+        out << "#!/bin/bash\n";
+        out << "cd \"" << fn << "\"\n";
+        out << "exec bash\n"; // Replaces the script process with an interactive shell in the target dir
+        scriptFile.close();
+
+        // Make the script executable (+x)
+        scriptFile.setPermissions(QFileDevice::ExeUser | QFileDevice::ReadUser | QFileDevice::WriteUser);
+
+        // Launch the terminal with the script
+        QStringList args;
+
+        // Most modern terminals accept the script path directly or via '--'
+        if (terminal.contains("gnome-terminal", Qt::CaseInsensitive) ||
+            terminal.contains("xfce4-terminal", Qt::CaseInsensitive)) {
+            args << "--" << tempScriptPath;
+        } else {
+            // Universal fallback for xterm, konsole, kitty, alacritty, etc.
+            args << tempScriptPath;
+        }
+
+        qDebug() << "Launching terminal:" << terminal << args;
+        QProcess::startDetached(terminal, args);
+    }
 }
 
 //******************************************************************************
@@ -896,6 +1014,7 @@ void MainWindow::slotDoPin()
         this->ui->btnEdit->setVisible(false);
         this->ui->btnTerm->setVisible(false);
         this->ui->btnBuild->setVisible(false);
+        this->ui->btnRun->setVisible(false);
         this->ui->horizontalSpacer->changeSize(0, 0, QSizePolicy::Fixed, QSizePolicy::Fixed);
         this->ui->horizontalSpacer->invalidate();
         this->ui->btnSettings->setVisible(false);
@@ -924,6 +1043,7 @@ void MainWindow::slotDoPin()
         this->ui->btnEdit->setVisible(true);
         this->ui->btnTerm->setVisible(true);
         this->ui->btnBuild->setVisible(true);
+        this->ui->btnRun->setVisible(true);
         this->ui->horizontalSpacer->changeSize(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
         this->ui->horizontalSpacer->invalidate();
         this->ui->btnSettings->setVisible(true);

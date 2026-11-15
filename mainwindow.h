@@ -95,10 +95,10 @@ private:
 private slots:
     void slotDoEdit();
     void slotDoEditFile();
+    void slotDoLaunchTerminal();
     void slotDoBrowseFile();
     void slotDoDefaultFile();
     void slotDoLaunchFile();
-    void slotDoLaunchTerminal();
     void slotDoExit();
     void slotDoPin();
     void slotDoTemplatesCutomizing();
@@ -122,6 +122,7 @@ private slots:
     void slotDoBrowser();
     void slotDoSettings();
     void slotDoBuild();
+    void slotDoRun();
     void slotClickedProject(QModelIndex idx);
     void slotDoubleClickedProject(QModelIndex idx);
     void slotMenuContextProject(QPoint p);
