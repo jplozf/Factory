@@ -86,7 +86,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) , ui(new Ui::MainW
                              .arg(GIT_COMMIT_COUNT)
                              .arg(GIT_HASH));
     clearProjectProperties();
-    git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
+    git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui);
 
     // Retrieve branch and commit hash and update the label
     QString branch = git->getCurrentBranch();
@@ -401,7 +401,8 @@ void MainWindow::openProject(QString projectPath) {
         project->startSession();
         runningSession = true;
 
-        git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
+        // git = new GitAPI(app->appSettings->get("GIT_BINARY_PATH").toString(), ui, project->projectDir);
+        git->setRootFolder(project->projectDir);
         displayProjectProperties();
 
         saveSettings();
